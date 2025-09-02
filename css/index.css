@@ -1,0 +1,419 @@
+/**
+ * Estilos específicos para index.html - Portal de Cotización Inteligente
+ * @author Alejandro Pérez
+ */
+
+/* ====== HEADER PERSONALIZADO ====== */
+header {
+    background: linear-gradient(135deg, var(--grammer-blue) 0%, var(--grammer-light-blue) 100%);
+    border-bottom: 3px solid var(--grammer-accent);
+}
+
+header h1 {
+    font-weight: 700;
+}
+
+header .btn-light:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ====== SECCIONES DEL FORMULARIO ====== */
+.section-header h4 {
+    font-weight: 600;
+    margin-bottom: var(--spacing-sm);
+}
+
+.section-header hr {
+    border-color: var(--grammer-accent);
+    opacity: 0.3;
+    margin-top: var(--spacing-sm);
+}
+
+/* ====== OPCIONES DE SERVICIO ====== */
+.service-option {
+    background-color: var(--gray-50);
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    height: 100%;
+}
+
+.service-option:hover {
+    border-color: var(--grammer-accent);
+    background-color: var(--grammer-accent);
+    color: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.service-option input[type="radio"]:checked + label {
+    color: var(--white);
+}
+
+.service-option input[type="radio"]:checked ~ .service-option,
+.service-option:has(input[type="radio"]:checked) {
+    background-color: var(--grammer-accent);
+    border-color: var(--grammer-blue);
+    color: var(--white);
+}
+
+.service-option label {
+    cursor: pointer;
+    margin-bottom: 0;
+    display: block;
+    width: 100%;
+}
+
+.service-option i {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-sm);
+    display: block;
+}
+
+.service-option strong {
+    font-size: 1.1rem;
+    display: block;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* ====== CONTENEDOR DE PAQUETES ====== */
+.package-item {
+    background-color: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    position: relative;
+    transition: all var(--transition-normal);
+}
+
+.package-item:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--grammer-accent);
+}
+
+.package-item.removing {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.package-header {
+    background-color: var(--grammer-accent);
+    color: var(--white);
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin: calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg)) var(--spacing-md) calc(-1 * var(--spacing-lg));
+    border-radius: var(--border-radius) var(--border-radius) 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.package-number {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.remove-package-btn {
+    background: none;
+    border: none;
+    color: var(--white);
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-fast);
+}
+
+.remove-package-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.package-item .row {
+    margin-bottom: var(--spacing-md);
+}
+
+.package-item .row:last-child {
+    margin-bottom: 0;
+}
+
+/* ====== BOTONES PERSONALIZADOS ====== */
+#addPackageBtn {
+    border: 2px dashed var(--grammer-accent);
+    background-color: transparent;
+    color: var(--grammer-accent);
+    font-weight: 600;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    transition: all var(--transition-normal);
+}
+
+#addPackageBtn:hover {
+    background-color: var(--grammer-accent);
+    color: var(--white);
+    border-style: solid;
+    transform: translateY(-1px);
+}
+
+.btn-custom-primary {
+    background: linear-gradient(135deg, var(--grammer-blue) 0%, var(--grammer-light-blue) 100%);
+    border: none;
+    color: var(--white);
+    font-weight: 700;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--border-radius);
+    transition: all var(--transition-normal);
+}
+
+.btn-custom-primary:hover {
+    background: linear-gradient(135deg, var(--grammer-dark-blue) 0%, var(--grammer-blue) 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: var(--white);
+}
+
+#submitBtn {
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: var(--spacing-md) var(--spacing-xl);
+}
+
+#clearFormBtn {
+    font-weight: 600;
+}
+
+/* ====== CONTROLES DE FORMULARIO PERSONALIZADOS ====== */
+.form-control-custom,
+.form-control,
+.form-select {
+    border: 2px solid var(--gray-200);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-sm) var(--spacing-md);
+    transition: all var(--transition-normal);
+    font-family: var(--body-font);
+}
+
+.form-control-custom:focus,
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--grammer-accent);
+    box-shadow: 0 0 0 0.2rem rgba(0, 163, 224, 0.25);
+    outline: none;
+}
+
+/* ====== TARJETAS PERSONALIZADAS ====== */
+.card-custom {
+    border: none;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    overflow: hidden;
+}
+
+.card-custom:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.card-custom .card-header {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--gray-100) 100%);
+    border-bottom: 2px solid var(--grammer-accent);
+    font-weight: 600;
+}
+
+/* ====== VALIDACIÓN DE FORMULARIOS ====== */
+.form-control.is-invalid,
+.form-select.is-invalid {
+    border-color: var(--danger);
+    background-image: none;
+}
+
+.form-control.is-valid,
+.form-select.is-valid {
+    border-color: var(--success);
+    background-image: none;
+}
+
+.invalid-feedback {
+    color: var(--danger);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-sm);
+}
+
+.valid-feedback {
+    color: var(--success);
+    font-size: 0.875rem;
+    margin-top: var(--spacing-sm);
+}
+
+/* ====== ANIMACIONES ====== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutDown {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.package-item.adding {
+    animation: slideInUp 0.3s ease-out;
+}
+
+.package-item.removing {
+    animation: slideOutDown 0.3s ease-in;
+}
+
+/* ====== CARD INFO ====== */
+.card-custom:last-of-type .card-body {
+    background: linear-gradient(45deg, var(--gray-50) 0%, var(--gray-100) 100%);
+}
+
+.card-custom:last-of-type i.fa-2x {
+    margin-bottom: var(--spacing-md);
+}
+
+.card-custom:last-of-type h6 {
+    color: var(--grammer-blue);
+    font-weight: 700;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 768px) {
+    .section-header h4 {
+        font-size: 1.1rem;
+    }
+    
+    .service-option {
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    .service-option i {
+        font-size: 1.2rem;
+    }
+    
+    .package-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .remove-package-btn {
+        position: absolute;
+        top: var(--spacing-sm);
+        right: var(--spacing-sm);
+    }
+    
+    .package-number {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    #submitBtn, #clearFormBtn {
+        margin-bottom: var(--spacing-sm);
+    }
+    
+    header .col-md-4 {
+        margin-top: var(--spacing-md);
+        text-align: center !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-body {
+        padding: var(--spacing-md);
+    }
+    
+    .service-option {
+        text-align: center;
+    }
+    
+    .row .col-md-6:first-child {
+        margin-bottom: var(--spacing-md);
+    }
+}
+
+/* ====== ESTADOS DE CARGA ====== */
+.form-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.form-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 1000;
+}
+
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* ====== MEJORAS DE ACCESIBILIDAD ====== */
+.service-option input[type="radio"]:focus + label {
+    outline: 2px solid var(--grammer-accent);
+    outline-offset: 2px;
+}
+
+/* ====== PRINT STYLES ====== */
+@media print {
+    header, footer, .btn, .card:last-of-type {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .package-item {
+        border: 1px solid #000 !important;
+        page-break-inside: avoid;
+    }
+}

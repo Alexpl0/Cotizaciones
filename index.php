@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Cotización Inteligente</title>
+    <title>GRAMMER Logística y Tráfico - Portal de Cotización</title>
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
@@ -17,24 +17,54 @@
     <!-- Estilos personalizados -->
     <link href="css/style.css" rel="stylesheet">
     <link href="css/index.css" rel="stylesheet">
+    <link href="css/grammer-theme.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Header -->
-    <header class="bg-primary text-white py-3 shadow-sm">
+    <!-- Header GRAMMER -->
+    <header class="bg-grammer-gradient text-white py-3 shadow-lg">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="h3 mb-0">
-                        <i class="fas fa-shipping-fast me-2"></i>
-                        Portal de Cotización Inteligente
-                    </h1>
-                    <small class="opacity-75">Gestión automatizada de cotizaciones de envío</small>
+                    <div class="d-flex align-items-center">
+                        <div class="grammer-logo me-3">
+                            <i class="fas fa-industry fa-2x"></i>
+                        </div>
+                        <div>
+                            <h1 class="h3 mb-0 fw-bold">
+                                <span class="grammer-brand">GRAMMER</span>
+                                <span class="grammer-subtitle">Logística y Tráfico</span>
+                            </h1>
+                            <small class="opacity-90">
+                                <i class="fas fa-shipping-fast me-1"></i>
+                                Portal de Cotización Inteligente
+                            </small>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-md-4 text-md-end">
-                    <a href="dashboard.html" class="btn btn-light btn-sm">
-                        <i class="fas fa-chart-line me-1"></i>
-                        Ver Dashboard
-                    </a>
+                    <div class="header-actions">
+                        <a href="dashboard.html" class="btn btn-light btn-sm me-2">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Dashboard
+                        </a>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-light btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="fas fa-cog me-1"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="grammerForm.loadDraft()">
+                                    <i class="fas fa-file-import me-2"></i>Cargar Borrador
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="grammerForm.clearDraft()">
+                                    <i class="fas fa-trash me-2"></i>Limpiar Borrador
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="mailto:logistica@grammer.com">
+                                    <i class="fas fa-envelope me-2"></i>Soporte
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -43,204 +73,42 @@
     <!-- Main Content -->
     <main class="container py-4">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
+            <div class="col-lg-10">
                 <!-- Form Card -->
-                <div class="card card-custom">
-                    <div class="card-header bg-light">
-                        <h2 class="card-title h5 mb-0">
-                            <i class="fas fa-plus-circle text-primary me-2"></i>
-                            Nueva Solicitud de Cotización
-                        </h2>
+                <div class="card grammer-card shadow-lg">
+                    <div class="card-header grammer-card-header">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h2 class="card-title h5 mb-0">
+                                    <i class="fas fa-plus-circle text-grammer-accent me-2"></i>
+                                    Nueva Solicitud de Cotización
+                                </h2>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    <span id="currentDateTime"></span>
+                                </small>
+                            </div>
+                            <div class="grammer-badge">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                Sistema Seguro
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="card-body">
                         <form id="shippingRequestForm" novalidate>
-                            <!-- Usuario -->
-                            <div class="mb-4">
-                                <label for="userName" class="form-label">
-                                    <i class="fas fa-user text-primary me-1"></i>
-                                    Usuario Solicitante
-                                </label>
-                                <input type="text" class="form-control form-control-custom" 
-                                       id="userName" name="user_name" required>
-                                <div class="invalid-feedback">
-                                    Por favor ingrese el nombre del usuario solicitante.
-                                </div>
+                            <!-- Selector de método y formulario dinámico -->
+                            <div id="shippingMethodSelector" class="mb-4">
+                                <!-- Será llenado por JavaScript -->
+                            </div>
+                            
+                            <!-- Container para formulario dinámico -->
+                            <div id="dynamicFormContainer">
+                                <!-- Será llenado dinámicamente por JavaScript según el método seleccionado -->
                             </div>
 
-                            <!-- Información de Origen -->
-                            <div class="section-header mb-3">
-                                <h4 class="text-primary">
-                                    <i class="fas fa-map-marker-alt me-2"></i>
-                                    Información de Origen
-                                </h4>
-                                <hr>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="originCountry" class="form-label">País</label>
-                                    <select class="form-select form-control-custom" 
-                                            id="originCountry" name="origin_country" required>
-                                        <option value="">Seleccionar país...</option>
-                                        <option value="MX">México</option>
-                                        <option value="US">Estados Unidos</option>
-                                        <option value="CA">Canadá</option>
-                                        <option value="GT">Guatemala</option>
-                                        <option value="ES">España</option>
-                                        <option value="CN">China</option>
-                                    </select>
-                                    <div class="invalid-feedback">
-                                        Seleccione el país de origen.
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="originPostalCode" class="form-label">Código Postal</label>
-                                    <input type="text" class="form-control form-control-custom" 
-                                           id="originPostalCode" name="origin_postal_code" required>
-                                    <div class="invalid-feedback">
-                                        Ingrese el código postal de origen.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="originAddress" class="form-label">Dirección Completa</label>
-                                <textarea class="form-control form-control-custom" 
-                                          id="originAddress" name="origin_address" 
-                                          rows="2" required placeholder="Calle, número, colonia, ciudad, estado..."></textarea>
-                                <div class="invalid-feedback">
-                                    Ingrese la dirección completa de origen.
-                                </div>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label for="originContact" class="form-label">Contacto</label>
-                                <input type="text" class="form-control form-control-custom" 
-                                       id="originContact" name="origin_contact" 
-                                       placeholder="Nombre y teléfono del contacto">
-                            </div>
-
-                            <!-- Información de Destino -->
-                            <div class="section-header mb-3">
-                                <h4 class="text-primary">
-                                    <i class="fas fa-flag-checkered me-2"></i>
-                                    Información de Destino
-                                </h4>
-                                <hr>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="destinationCountry" class="form-label">País</label>
-                                    <select class="form-select form-control-custom" 
-                                            id="destinationCountry" name="destination_country" required>
-                                        <option value="">Seleccionar país...</option>
-                                        <option value="MX">México</option>
-                                        <option value="US">Estados Unidos</option>
-                                        <option value="CA">Canadá</option>
-                                        <option value="GT">Guatemala</option>
-                                        <option value="ES">España</option>
-                                        <option value="CN">China</option>
-                                    </select>
-                                    <div class="invalid-feedback">
-                                        Seleccione el país de destino.
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="destinationPostalCode" class="form-label">Código Postal</label>
-                                    <input type="text" class="form-control form-control-custom" 
-                                           id="destinationPostalCode" name="destination_postal_code" required>
-                                    <div class="invalid-feedback">
-                                        Ingrese el código postal de destino.
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="destinationAddress" class="form-label">Dirección Completa</label>
-                                <textarea class="form-control form-control-custom" 
-                                          id="destinationAddress" name="destination_address" 
-                                          rows="2" required placeholder="Calle, número, colonia, ciudad, estado..."></textarea>
-                                <div class="invalid-feedback">
-                                    Ingrese la dirección completa de destino.
-                                </div>
-                            </div>
-                            
-                            <div class="mb-4">
-                                <label for="destinationContact" class="form-label">Contacto</label>
-                                <input type="text" class="form-control form-control-custom" 
-                                       id="destinationContact" name="destination_contact" 
-                                       placeholder="Nombre y teléfono del contacto">
-                            </div>
-
-                            <!-- Detalles del Paquete -->
-                            <div class="section-header mb-3">
-                                <h4 class="text-primary">
-                                    <i class="fas fa-box me-2"></i>
-                                    Detalles del Paquete
-                                </h4>
-                                <hr>
-                            </div>
-                            
-                            <div id="packagesContainer">
-                                <!-- Los paquetes se añadirán dinámicamente aquí -->
-                            </div>
-                            
-                            <div class="mb-4">
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="addPackageBtn">
-                                    <i class="fas fa-plus me-1"></i>
-                                    Añadir Paquete
-                                </button>
-                            </div>
-
-                            <!-- Tipo de Servicio -->
-                            <div class="section-header mb-3">
-                                <h4 class="text-primary">
-                                    <i class="fas fa-truck me-2"></i>
-                                    Tipo de Servicio
-                                </h4>
-                                <hr>
-                            </div>
-                            
-                            <div class="row mb-4">
-                                <div class="col-md-4">
-                                    <div class="form-check service-option">
-                                        <input class="form-check-input" type="radio" 
-                                               name="service_type" id="serviceAir" value="air" required>
-                                        <label class="form-check-label" for="serviceAir">
-                                            <i class="fas fa-plane text-info"></i>
-                                            <strong>Aéreo</strong>
-                                            <small class="d-block text-muted">Rápido y seguro</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check service-option">
-                                        <input class="form-check-input" type="radio" 
-                                               name="service_type" id="serviceSea" value="sea" required>
-                                        <label class="form-check-label" for="serviceSea">
-                                            <i class="fas fa-ship text-info"></i>
-                                            <strong>Marítimo</strong>
-                                            <small class="d-block text-muted">Económico para grandes volúmenes</small>
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-check service-option">
-                                        <input class="form-check-input" type="radio" 
-                                               name="service_type" id="serviceLand" value="land" required>
-                                        <label class="form-check-label" for="serviceLand">
-                                            <i class="fas fa-truck text-info"></i>
-                                            <strong>Terrestre</strong>
-                                            <small class="d-block text-muted">Ideal para distancias cortas</small>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Botones de Acción -->
-                            <div class="row">
+                            <!-- Botones de Acción (solo visible cuando hay método seleccionado) -->
+                            <div id="formActionButtons" class="row mt-4" style="display: none;">
                                 <div class="col-md-6">
                                     <button type="button" class="btn btn-outline-secondary w-100" id="clearFormBtn">
                                         <i class="fas fa-eraser me-1"></i>
@@ -248,9 +116,13 @@
                                     </button>
                                 </div>
                                 <div class="col-md-6">
-                                    <button type="submit" class="btn btn-custom-primary w-100" id="submitBtn">
+                                    <button type="submit" class="btn btn-grammer-primary w-100" id="submitBtn">
                                         <i class="fas fa-paper-plane me-1"></i>
-                                        Enviar y Cotizar
+                                        <span class="submit-text">Enviar Solicitud</span>
+                                        <span class="submit-loading d-none">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                            Enviando...
+                                        </span>
                                     </button>
                                 </div>
                             </div>
@@ -258,33 +130,113 @@
                     </div>
                 </div>
 
-                <!-- Info Card -->
-                <div class="card card-custom mt-4">
+                <!-- Info Card GRAMMER -->
+                <div class="card grammer-info-card mt-4">
                     <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-info-circle text-info me-2"></i>
-                            ¿Cómo funciona?
+                        <h5 class="card-title text-grammer-primary">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Cómo funciona nuestro sistema de cotización
                         </h5>
                         <div class="row">
                             <div class="col-md-3 text-center mb-3">
-                                <i class="fas fa-edit fa-2x text-primary mb-2"></i>
-                                <h6>1. Completa el formulario</h6>
-                                <small class="text-muted">Ingresa los detalles de tu envío</small>
+                                <div class="info-step">
+                                    <div class="step-icon bg-grammer-primary">
+                                        <i class="fas fa-mouse-pointer fa-lg"></i>
+                                    </div>
+                                    <h6>1. Seleccionar Método</h6>
+                                    <small class="text-muted">Elige entre Fedex, Aéreo-Marítimo o Nacional</small>
+                                </div>
                             </div>
                             <div class="col-md-3 text-center mb-3">
-                                <i class="fas fa-share fa-2x text-secondary mb-2"></i>
-                                <h6>2. Envío automático</h6>
-                                <small class="text-muted">Se notifica a todos los transportistas</small>
+                                <div class="info-step">
+                                    <div class="step-icon bg-grammer-secondary">
+                                        <i class="fas fa-edit fa-lg"></i>
+                                    </div>
+                                    <h6>2. Completar Datos</h6>
+                                    <small class="text-muted">Llena el formulario específico del método</small>
+                                </div>
                             </div>
                             <div class="col-md-3 text-center mb-3">
-                                <i class="fas fa-brain fa-2x text-success mb-2"></i>
-                                <h6>3. Análisis IA</h6>
-                                <small class="text-muted">La IA procesa las respuestas</small>
+                                <div class="info-step">
+                                    <div class="step-icon bg-grammer-accent">
+                                        <i class="fas fa-share fa-lg"></i>
+                                    </div>
+                                    <h6>3. Envío Automático</h6>
+                                    <small class="text-muted">Se notifica a transportistas especializados</small>
+                                </div>
                             </div>
                             <div class="col-md-3 text-center mb-3">
-                                <i class="fas fa-chart-bar fa-2x text-warning mb-2"></i>
-                                <h6>4. Comparativa</h6>
-                                <small class="text-muted">Elige la mejor opción</small>
+                                <div class="info-step">
+                                    <div class="step-icon bg-grammer-success">
+                                        <i class="fas fa-chart-bar fa-lg"></i>
+                                    </div>
+                                    <h6>4. Análisis IA</h6>
+                                    <small class="text-muted">Comparativa inteligente de opciones</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información adicional GRAMMER -->
+                        <div class="mt-4 pt-4 border-top">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-grammer-primary">
+                                        <i class="fas fa-clock me-2"></i>
+                                        Horarios de Operación
+                                    </h6>
+                                    <ul class="list-unstyled small">
+                                        <li><strong>Lunes a Viernes:</strong> 7:00 AM - 5:00 PM</li>
+                                        <li><strong>Sábados:</strong> 8:00 AM - 12:00 PM</li>
+                                        <li><strong>Domingos:</strong> Cerrado</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-grammer-primary">
+                                        <i class="fas fa-phone me-2"></i>
+                                        Contacto de Emergencia
+                                    </h6>
+                                    <ul class="list-unstyled small">
+                                        <li><strong>Logística:</strong> +52 442 123-4567</li>
+                                        <li><strong>Urgencias:</strong> +52 442 987-6543</li>
+                                        <li><strong>Email:</strong> logistica@grammer.com</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Card (Solo visible si hay datos) -->
+                <div id="quickStats" class="card grammer-stats-card mt-4 d-none">
+                    <div class="card-body">
+                        <h6 class="card-title text-grammer-primary mb-3">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Estadísticas Rápidas - Hoy
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="todayRequests">0</div>
+                                    <div class="stat-label">Solicitudes</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="pendingQuotes">0</div>
+                                    <div class="stat-label">Pendientes</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="completedToday">0</div>
+                                    <div class="stat-label">Completadas</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <div class="stat-number" id="avgResponseTime">-</div>
+                                    <div class="stat-label">Tiempo Resp. Prom.</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -293,17 +245,174 @@
         </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-white py-3 mt-5">
-        <div class="container text-center">
-            <small>&copy; 2025 Tu Empresa - Portal de Cotización Inteligente v1.0</small>
+    <!-- Footer GRAMMER -->
+    <footer class="bg-grammer-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="footer-brand mb-2">
+                        <i class="fas fa-industry me-2"></i>
+                        <strong>GRAMMER Automotive Puebla S.A. de C.V.</strong>
+                    </div>
+                    <p class="small mb-2">
+                        Av. de la luz #24 int. 3 y 4 Acceso III<br>
+                        Parque Ind. Benito Juárez 76120, Querétaro, México
+                    </p>
+                    <p class="small text-muted mb-0">
+                        Portal de Cotización Inteligente v1.0 - Logística y Tráfico
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="footer-links mb-3">
+                        <a href="dashboard.html" class="text-light me-3">
+                            <i class="fas fa-chart-line me-1"></i>Dashboard
+                        </a>
+                        <a href="mailto:logistica@grammer.com" class="text-light me-3">
+                            <i class="fas fa-envelope me-1"></i>Soporte
+                        </a>
+                        <a href="#" class="text-light" data-bs-toggle="modal" data-bs-target="#helpModal">
+                            <i class="fas fa-question-circle me-1"></i>Ayuda
+                        </a>
+                    </div>
+                    <div class="footer-cert">
+                        <small class="text-muted">
+                            <i class="fas fa-certificate me-1"></i>
+                            Sistema certificado ISO 27001
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-3 border-secondary">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <small class="text-muted">
+                        © 2025 GRAMMER Automotive Puebla S.A. de C.V. - Todos los derechos reservados
+                    </small>
+                </div>
+            </div>
         </div>
     </footer>
+
+    <!-- Modal de Ayuda -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-grammer-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-question-circle me-2"></i>
+                        Ayuda - Portal GRAMMER
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6 class="text-grammer-primary">Métodos de Envío</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Fedex Express:</strong> Para envíos urgentes y documentos</li>
+                                <li><strong>Aéreo-Marítimo:</strong> Envíos internacionales con INCOTERMS</li>
+                                <li><strong>Nacional:</strong> Envíos domésticos a planta GRAMMER</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-grammer-primary">¿Problemas Técnicos?</h6>
+                            <ul class="list-unstyled small">
+                                <li>Limpiar caché del navegador</li>
+                                <li>Verificar conexión a internet</li>
+                                <li>Contactar soporte IT interno</li>
+                                <li>Reportar error: logistica@grammer.com</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="text-grammer-primary">Contacto Directo</h6>
+                            <ul class="list-unstyled small">
+                                <li><strong>Logística:</strong> +52 442 123-4567</li>
+                                <li><strong>Tráfico:</strong> +52 442 234-5678</li>
+                                <li><strong>Email:</strong> logistica@grammer.com</li>
+                                <li><strong>Urgencias:</strong> 24/7 disponible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <a href="mailto:logistica@grammer.com" class="btn btn-grammer-primary">
+                        <i class="fas fa-envelope me-1"></i>
+                        Contactar Soporte
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.1/sweetalert2.all.min.js"></script>
     <script src="config.js"></script>
     <script type="module" src="js/index.js"></script>
+    
+    <!-- Script para elementos adicionales -->
+    <script>
+        // Mostrar fecha y hora actual
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZone: 'America/Mexico_City'
+            };
+            document.getElementById('currentDateTime').textContent = 
+                now.toLocaleDateString('es-MX', options);
+                
+            // Mostrar/ocultar botones de acción cuando se selecciona método
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes.length > 0) {
+                        const methodForm = document.querySelector('.method-form-container');
+                        const actionButtons = document.getElementById('formActionButtons');
+                        
+                        if (methodForm && actionButtons) {
+                            actionButtons.style.display = 'block';
+                            actionButtons.style.animation = 'slideInUp 0.4s ease-out';
+                        }
+                    }
+                });
+            });
+            
+            observer.observe(document.getElementById('dynamicFormContainer'), {
+                childList: true,
+                subtree: true
+            });
+            
+            // Cargar estadísticas rápidas si están disponibles
+            loadQuickStats();
+        });
+        
+        // Función para cargar estadísticas rápidas
+        async function loadQuickStats() {
+            try {
+                // Aquí se puede implementar una llamada rápida a la API
+                // Por ahora, simulamos algunos datos
+                setTimeout(() => {
+                    const statsCard = document.getElementById('quickStats');
+                    if (statsCard && Math.random() > 0.7) { // 30% probabilidad de mostrar
+                        statsCard.classList.remove('d-none');
+                        
+                        // Simular datos
+                        document.getElementById('todayRequests').textContent = Math.floor(Math.random() * 15) + 1;
+                        document.getElementById('pendingQuotes').textContent = Math.floor(Math.random() * 8);
+                        document.getElementById('completedToday').textContent = Math.floor(Math.random() * 5);
+                        document.getElementById('avgResponseTime').textContent = (Math.random() * 3 + 0.5).toFixed(1) + 'h';
+                    }
+                }, 1000);
+            } catch (error) {
+                console.log('No se pudieron cargar las estadísticas rápidas');
+            }
+        }
+    </script>
 </body>
 </html>

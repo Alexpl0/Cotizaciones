@@ -142,7 +142,7 @@ header .btn-light:hover {
 }
 
 .text-muted {
-    color: var(--gray-200);
+    color: var(--gray-500) !important;
 }
 
 /* ====== BOTONES PERSONALIZADOS ====== */

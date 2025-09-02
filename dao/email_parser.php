@@ -12,7 +12,7 @@ if (php_sapi_name() !== 'cli' && !isset($_GET['debug'])) {
 }
 
 require_once __DIR__ . '/config.php'; // Assuming config.php is in the same directory
-require_once __DIR__ . '/dao/db/db.php';
+require_once __DIR__ . '/db/db.php';
 
 // Set time and memory limits for long processing
 set_time_limit(300); // 5 minutes

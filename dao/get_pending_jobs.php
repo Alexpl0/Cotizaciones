@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/dao/db/db.php';
+require_once __DIR__ . '/db/db.php';
 // Assuming a simple config for API key, or you can define it here.
 define('SAP_API_KEY', 'tu_clave_sap_secreta'); 
 define('MAX_RETRIES', 5);

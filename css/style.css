@@ -479,6 +479,9 @@ body.minimal-content .app-footer {
     border-color: var(--grammer-accent);
     box-shadow: 0 0 0 0.2rem rgba(0, 163, 224, 0.25);
 }
+.text-muted {
+    color: var(--gray-500) !important;
+}
 
 /* ====== ANIMACIONES ====== */
 @keyframes slideInUp {

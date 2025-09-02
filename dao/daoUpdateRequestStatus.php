@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-require_once __DIR__ . '/dao/db/db.php';
+require_once __DIR__ . '/db/db.php';
 
 function sendJsonResponse($success, $message, $data = null, $statusCode = 200) {
     http_response_code($statusCode);

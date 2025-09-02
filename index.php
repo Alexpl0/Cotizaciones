@@ -43,7 +43,7 @@
                 </div>
                 <div class="col-md-4 text-md-end">
                     <div class="header-actions">
-                        <a href="dashboard.html" class="btn btn-light btn-sm me-2">
+                        <a href="dashboard.php" class="btn btn-light btn-sm me-2">
                             <i class="fas fa-chart-line me-1"></i>
                             Dashboard
                         </a>
@@ -264,7 +264,7 @@
                 </div>
                 <div class="col-md-6 text-md-end">
                     <div class="footer-links mb-3">
-                        <a href="dashboard.html" class="text-light me-3">
+                        <a href="dashboard.php" class="text-light me-3">
                             <i class="fas fa-chart-line me-1"></i>Dashboard
                         </a>
                         <a href="mailto:logistica@grammer.com" class="text-light me-3">

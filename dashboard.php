@@ -38,7 +38,7 @@
                         <i class="fas fa-sync-alt me-1"></i>
                         Actualizar
                     </button>
-                    <a href="index.html" class="btn btn-outline-light btn-sm">
+                    <a href="index.php" class="btn btn-outline-light btn-sm">
                         <i class="fas fa-plus me-1"></i>
                         Nueva Solicitud
                     </a>
@@ -194,7 +194,7 @@
                             <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
                             <h5 class="text-muted">No hay solicitudes</h5>
                             <p class="text-muted">No se encontraron solicitudes que coincidan con los filtros aplicados.</p>
-                            <a href="index.html" class="btn btn-custom-primary">
+                            <a href="index.php" class="btn btn-custom-primary">
                                 <i class="fas fa-plus me-1"></i>
                                 Crear Nueva Solicitud
                             </a>

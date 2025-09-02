@@ -4,20 +4,39 @@
 
 /*===== CSS CUSTOM PROPERTIES =====*/
 :root {
-    /* Grammer Corporate Colors */
+    /* Grammer Corporate Colors - Original */
     --grammer-blue: #034C8C;
     --grammer-light-blue: #4A90D9;
     --grammer-dark-blue: #002856;
     --grammer-accent: #00A3E0;
     
-    /* Semantic Colors */
+    /* Colores Corporativos GRAMMER Extendidos */
+    --grammer-primary: #003366;      /* Azul oscuro corporativo */
+    --grammer-secondary: #0066CC;    /* Azul medio */
+    --grammer-success: #00AA44;      /* Verde GRAMMER */
+    --grammer-warning: #FF8800;      /* Naranja */
+    --grammer-danger: #CC0000;       /* Rojo */
+    --grammer-dark: #001122;         /* Azul muy oscuro */
+    --grammer-light: #F0F8FF;        /* Azul muy claro */
+    
+    /* Gradientes GRAMMER */
+    --grammer-gradient: linear-gradient(135deg, var(--grammer-primary) 0%, var(--grammer-secondary) 50%, var(--grammer-accent) 100%);
+    --grammer-gradient-light: linear-gradient(135deg, var(--grammer-light) 0%, #E6F3FF 100%);
+    --grammer-gradient-dark: linear-gradient(135deg, var(--grammer-dark) 0%, var(--grammer-primary) 100%);
+    
+    /* Sombras GRAMMER */
+    --grammer-shadow: 0 4px 20px rgba(0, 51, 102, 0.15);
+    --grammer-shadow-lg: 0 8px 30px rgba(0, 51, 102, 0.25);
+    --grammer-shadow-hover: 0 6px 25px rgba(0, 51, 102, 0.3);
+    
+    /* Semantic Colors - Original */
     --success: #218621;
     --warning: #F59E0B;
     --danger: #E41A23;
     --info: #3B82F6;
     --background: #CBDEED;
     
-    /* Neutrals */
+    /* Neutrals - Original */
     --white: #FFFFFF;
     --gray-50: #F9FAFB;
     --gray-100: #F3F4F6;
@@ -30,7 +49,7 @@
     --gray-800: #1F2937;
     --gray-900: #111827;
     
-    /* Layout */
+    /* Layout - Original */
     --max-width: 1200px;
     --border-radius: 8px;
     --border-radius-lg: 12px;
@@ -40,21 +59,21 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     
-    /* Shadows */
+    /* Shadows - Original */
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 
-    /* Transitions */
+    /* Transitions - Original */
     --transition-fast: 0.15s ease-in-out;
     --transition-normal: 0.3s ease-in-out;
     --transition-slow: 0.5s ease-in-out;
 
-    /* Font */
+    /* Font - Original */
     --body-font: 'Merriweather', serif;
     --mono-font: 'Roboto Mono', monospace;
 }
 
-/* --- Reseteo Básico y Estilos del Body --- */
+/* --- Reseteo Básico y Estilos del Body - Original --- */
 * {
     margin: 0;
     padding: 0;
@@ -71,7 +90,7 @@ body {
     color: var(--gray-800);
 }
 
-/* --- LAYOUT PRINCIPAL DE LA APP --- */
+/* --- LAYOUT PRINCIPAL DE LA APP - Original --- */
 .app-container {
     display: flex;
     flex-direction: column;
@@ -84,7 +103,7 @@ body {
     box-sizing: border-box;
 }
 
-/* --- FOOTER SIMPLE Y AUTOMÁTICO --- */
+/* --- FOOTER SIMPLE Y AUTOMÁTICO - Original --- */
 .app-footer {
     flex-shrink: 0; /* El footer nunca se contrae */
     width: 100%;
@@ -102,7 +121,7 @@ body {
     font-weight: 700;
 }
 
-/* --- RESPONSIVE PARA EL FOOTER --- */
+/* --- RESPONSIVE PARA EL FOOTER - Original --- */
 @media (max-width: 768px) {
     .app-main-content {
         padding: var(--spacing-md);
@@ -119,11 +138,394 @@ body {
     }
 }
 
-/* Asegurar que el footer se mantenga en la parte inferior cuando hay poco contenido */
+/* Asegurar que el footer se mantenga en la parte inferior cuando hay poco contenido - Original */
 body.minimal-content .app-container {
     min-height: 100vh;
 }
 
 body.minimal-content .app-footer {
     margin-top: auto;
+}
+
+/* ====== TEMA GRAMMER - ESTILOS CORPORATIVOS ====== */
+
+/* ====== HEADER GRAMMER ====== */
+.bg-grammer-gradient {
+    background: var(--grammer-gradient);
+    position: relative;
+    overflow: hidden;
+}
+
+.bg-grammer-gradient::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+    pointer-events: none;
+}
+
+.grammer-logo {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.grammer-brand {
+    font-weight: 900;
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.grammer-subtitle {
+    font-weight: 400;
+    font-size: 0.9rem;
+    display: block;
+    opacity: 0.95;
+}
+
+.header-actions .btn {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.header-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* ====== TARJETAS GRAMMER ====== */
+.grammer-card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: var(--grammer-shadow);
+    transition: all 0.3s ease;
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.grammer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--grammer-shadow-lg);
+}
+
+.grammer-card-header {
+    background: var(--grammer-gradient-light);
+    border-bottom: 3px solid var(--grammer-accent);
+    padding: 1.5rem;
+    position: relative;
+}
+
+.grammer-card-header::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100px;
+    height: 3px;
+    background: var(--grammer-primary);
+    border-radius: 0 15px 15px 0;
+}
+
+.grammer-badge {
+    background: var(--grammer-success);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0, 170, 68, 0.3);
+}
+
+/* ====== SELECTOR DE MÉTODOS ====== */
+.method-selector-container {
+    animation: slideInUp 0.5s ease-out;
+}
+
+.method-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+    border: 2px solid #e3f2fd;
+    border-radius: 15px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.method-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 153, 255, 0.1), transparent);
+    transition: left 0.5s ease;
+}
+
+.method-card:hover::before {
+    left: 100%;
+}
+
+.method-card:hover {
+    border-color: var(--grammer-accent);
+    transform: translateY(-8px);
+    box-shadow: var(--grammer-shadow-hover);
+    background: linear-gradient(135deg, #ffffff 0%, #e6f3ff 100%);
+}
+
+.method-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--grammer-gradient);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+    font-size: 2rem;
+    box-shadow: var(--grammer-shadow);
+    transition: all 0.3s ease;
+}
+
+.method-card:hover .method-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: var(--grammer-shadow-lg);
+}
+
+.method-card h5 {
+    color: var(--grammer-primary);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.method-card p {
+    color: var(--gray-600);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.method-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.method-features li {
+    padding: 0.3rem 0;
+    font-size: 0.8rem;
+    color: var(--gray-700);
+    position: relative;
+    padding-left: 1.2rem;
+}
+
+.method-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--grammer-success);
+    font-weight: bold;
+}
+
+/* ====== BOTONES GRAMMER ====== */
+.btn-grammer-primary {
+    background: var(--grammer-gradient);
+    border: none;
+    color: white;
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: var(--grammer-shadow);
+}
+
+.btn-grammer-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--grammer-shadow-lg);
+    color: white;
+}
+
+.btn-grammer-primary:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 163, 224, 0.25);
+}
+
+/* ====== TEXTOS GRAMMER ====== */
+.text-grammer-primary {
+    color: var(--grammer-primary) !important;
+}
+
+.text-grammer-accent {
+    color: var(--grammer-accent) !important;
+}
+
+/* ====== CARDS INFORMATIVOS ====== */
+.grammer-info-card {
+    background: var(--grammer-gradient-light);
+    border: 1px solid rgba(0, 163, 224, 0.2);
+    border-radius: 15px;
+    box-shadow: var(--grammer-shadow);
+}
+
+.grammer-stats-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+    border-left: 5px solid var(--grammer-accent);
+    border-radius: 10px;
+    box-shadow: var(--grammer-shadow);
+}
+
+.info-step {
+    padding: 1rem 0.5rem;
+}
+
+.step-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.info-step:hover .step-icon {
+    transform: scale(1.1);
+}
+
+.bg-grammer-primary {
+    background-color: var(--grammer-primary) !important;
+}
+
+.bg-grammer-secondary {
+    background-color: var(--grammer-secondary) !important;
+}
+
+.bg-grammer-accent {
+    background-color: var(--grammer-accent) !important;
+}
+
+.bg-grammer-success {
+    background-color: var(--grammer-success) !important;
+}
+
+/* ====== STATS ====== */
+.stat-item {
+    text-align: center;
+    padding: 1rem 0.5rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--grammer-primary);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ====== FOOTER GRAMMER ====== */
+.bg-grammer-dark {
+    background: var(--grammer-gradient-dark);
+    color: white;
+}
+
+.footer-brand {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.footer-links a {
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.footer-links a:hover {
+    color: var(--grammer-accent) !important;
+    transform: translateY(-1px);
+}
+
+.footer-cert {
+    opacity: 0.8;
+}
+
+/* ====== FORMULARIOS GRAMMER ====== */
+.form-control-custom:focus {
+    border-color: var(--grammer-accent);
+    box-shadow: 0 0 0 0.2rem rgba(0, 163, 224, 0.25);
+}
+
+.form-select:focus {
+    border-color: var(--grammer-accent);
+    box-shadow: 0 0 0 0.2rem rgba(0, 163, 224, 0.25);
+}
+
+/* ====== ANIMACIONES ====== */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideOutUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+}
+
+/* ====== RESPONSIVE GRAMMER ====== */
+@media (max-width: 768px) {
+    .grammer-logo {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .grammer-brand {
+        font-size: 1.2rem;
+    }
+    
+    .method-card {
+        padding: 1.5rem 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .method-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
 }

@@ -119,7 +119,7 @@ const API = {
     // ==================== ENDPOINTS ESPECÍFICOS ====================
 
     /**
-     * Envía una nueva solicitud de cotización
+     * Envía una nueva solicitud de cotización (método tradicional)
      * @param {Object} requestData 
      * @returns {Promise}
      */
@@ -130,6 +130,25 @@ const API = {
                 showLoading: true,
                 showSuccessMessage: true,
                 successMessage: 'Solicitud enviada correctamente. Se han notificado los transportistas.',
+            }
+        );
+    },
+
+    /**
+     * Envía una nueva solicitud de cotización GRAMMER (con métodos específicos)
+     * @param {Object} requestData 
+     * @returns {Promise}
+     */
+    async sendGrammerShippingRequest(requestData) {
+        return this.handleResponse(
+            this.request(CONFIG.API.SEND_REQUEST, {
+                ...requestData,
+                is_grammer_request: true
+            }),
+            {
+                showLoading: true,
+                showSuccessMessage: true,
+                successMessage: `Solicitud GRAMMER enviada correctamente. Método: ${this.getMethodDisplayName(requestData.shipping_method)}`,
             }
         );
     },

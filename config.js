@@ -6,7 +6,7 @@
 
 const CONFIG = {
     // URL base del proyecto (cambiar según el dominio)
-    URLBASE: 'https://tudominio.hostinger.com/', // Cambiar por tu dominio real
+    URLBASE: 'https://grammermx.com/Jesus//Cotizaciones/', // Cambiar por tu dominio real
     
     // Endpoints de la API
     API: {

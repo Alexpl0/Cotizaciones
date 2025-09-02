@@ -141,6 +141,10 @@ header .btn-light:hover {
     margin-bottom: 0;
 }
 
+.text-muted {
+    color: var(--gray-200);
+}
+
 /* ====== BOTONES PERSONALIZADOS ====== */
 #addPackageBtn {
     border: 2px dashed var(--grammer-accent);

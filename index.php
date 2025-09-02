@@ -175,34 +175,6 @@
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Información adicional GRAMMER -->
-                        <div class="mt-4 pt-4 border-top">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="text-grammer-primary">
-                                        <i class="fas fa-clock me-2"></i>
-                                        Horarios de Operación
-                                    </h6>
-                                    <ul class="list-unstyled small">
-                                        <li><strong>Lunes a Viernes:</strong> 7:00 AM - 5:00 PM</li>
-                                        <li><strong>Sábados:</strong> 8:00 AM - 12:00 PM</li>
-                                        <li><strong>Domingos:</strong> Cerrado</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="text-grammer-primary">
-                                        <i class="fas fa-phone me-2"></i>
-                                        Contacto de Emergencia
-                                    </h6>
-                                    <ul class="list-unstyled small">
-                                        <li><strong>Logística:</strong> +52 442 123-4567</li>
-                                        <li><strong>Urgencias:</strong> +52 442 987-6543</li>
-                                        <li><strong>Email:</strong> logistica@grammer.com</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 

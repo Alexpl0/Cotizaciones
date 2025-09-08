@@ -573,6 +573,11 @@ class GrammerDashboard {
             'completed': 'Completado',
             'canceled': 'Cancelado'
         };
+
+        // Obtener información de direcciones desde method_details
+        const originInfo = this.getOriginInfo(request);
+        const destinationInfo = this.getDestinationInfo(request);
+        const packageInfo = this.getPackageInfo(request);
         
         return `
             <div class="row">
@@ -587,19 +592,33 @@ class GrammerDashboard {
                                 <span class="ms-2">#${request.id}</span>
                             </div>
                             <div class="col-12">
+                                <strong class="text-grammer-primary">Referencia:</strong>
+                                <span class="ms-2">${request.internal_reference || 'N/A'}</span>
+                            </div>
+                            <div class="col-12">
                                 <strong class="text-grammer-primary">Usuario:</strong>
                                 <span class="ms-2">${Utils.sanitizeString(request.user_name)}</span>
                             </div>
                             <div class="col-12">
-                                <strong class="text-grammer-primary">Servicio:</strong>
+                                <strong class="text-grammer-primary">Área:</strong>
+                                <span class="ms-2">${request.company_area || 'N/A'}</span>
+                            </div>
+                            <div class="col-12">
+                                <strong class="text-grammer-primary">Método:</strong>
                                 <span class="grammer-badge bg-grammer-secondary ms-2">
-                                    ${serviceTypeNames[request.service_type]}
+                                    ${this.getMethodDisplayName(request.shipping_method)}
+                                </span>
+                            </div>
+                            <div class="col-12">
+                                <strong class="text-grammer-primary">Servicio:</strong>
+                                <span class="grammer-badge bg-grammer-accent ms-2">
+                                    ${serviceTypeNames[request.service_type] || request.service_type}
                                 </span>
                             </div>
                             <div class="col-12">
                                 <strong class="text-grammer-primary">Estado:</strong>
                                 <span class="grammer-badge ${this.getStatusBadgeClass(request.status)} ms-2">
-                                    ${statusNames[request.status]}
+                                    ${statusNames[request.status] || request.status}
                                 </span>
                             </div>
                         </div>
@@ -649,9 +668,10 @@ class GrammerDashboard {
                             <i class="fas fa-map-marker-alt me-2"></i>Origen
                         </h6>
                         <div class="text-grammer-primary">
-                            <div><strong>País:</strong> ${request.origin_details.country}</div>
-                            <div><strong>Código Postal:</strong> ${request.origin_details.postal_code}</div>
-                            <div><strong>Dirección:</strong> ${request.origin_details.address}</div>
+                            <div><strong>País:</strong> ${originInfo.country}</div>
+                            <div><strong>Dirección:</strong> ${originInfo.address}</div>
+                            ${originInfo.contact ? `<div><strong>Contacto:</strong> ${originInfo.contact}</div>` : ''}
+                            ${originInfo.phone ? `<div><strong>Teléfono:</strong> ${originInfo.phone}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -662,41 +682,279 @@ class GrammerDashboard {
                             <i class="fas fa-flag-checkered me-2"></i>Destino
                         </h6>
                         <div class="text-grammer-primary">
-                            <div><strong>País:</strong> ${request.destination_details.country}</div>
-                            <div><strong>Código Postal:</strong> ${request.destination_details.postal_code}</div>
-                            <div><strong>Dirección:</strong> ${request.destination_details.address}</div>
+                            <div><strong>País:</strong> ${destinationInfo.country}</div>
+                            <div><strong>Dirección:</strong> ${destinationInfo.address}</div>
+                            ${destinationInfo.contact ? `<div><strong>Contacto:</strong> ${destinationInfo.contact}</div>` : ''}
+                            ${destinationInfo.company ? `<div><strong>Empresa:</strong> ${destinationInfo.company}</div>` : ''}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grammer-info-card p-3">
-                <h6 class="text-grammer-primary mb-3">
-                    <i class="fas fa-box me-2"></i>Paquetes (${request.package_details.length})
-                </h6>
-                <div class="row">
-                    ${request.package_details.map((pkg, index) => `
-                        <div class="col-md-6 mb-3">
-                            <div class="border rounded p-3 bg-light">
-                                <strong class="text-grammer-primary">Paquete ${index + 1}</strong>
-                                <div class="mt-2">
-                                    <div><strong>Descripción:</strong> ${Utils.sanitizeString(pkg.description)}</div>
-                                    <div><strong>Cantidad:</strong> ${pkg.quantity}</div>
-                                    <div><strong>Peso:</strong> ${pkg.weight} kg</div>
-                                </div>
+            ${packageInfo.html}
+
+            ${this.getMethodSpecificDetailsHTML(request)}
+        `;
+    }
+
+    /**
+     * Obtiene información del origen basada en el método de envío
+     */
+    getOriginInfo(request) {
+        const defaultInfo = {
+            country: request.route_info?.origin_country || 'N/A',
+            address: 'N/A',
+            contact: null,
+            phone: null
+        };
+
+        if (!request.method_details) return defaultInfo;
+
+        const details = request.method_details;
+        
+        switch (request.shipping_method) {
+            case 'nacional':
+                return {
+                    country: 'México',
+                    address: details.pickup_address || 'N/A',
+                    contact: details.contact_name || null,
+                    phone: details.contact_phone || null
+                };
+                
+            case 'fedex':
+                return {
+                    country: request.route_info?.origin_country || 'N/A',
+                    address: details.origin_address || 'N/A',
+                    contact: details.origin_contact_name || null,
+                    phone: details.origin_contact_phone || null
+                };
+                
+            case 'aereo_maritimo':
+                return {
+                    country: request.route_info?.origin_country || 'N/A',
+                    address: details.pickup_address || 'N/A',
+                    contact: details.origin_contact_name || null,
+                    phone: details.origin_contact_phone || null
+                };
+                
+            default:
+                return defaultInfo;
+        }
+    }
+
+    /**
+     * Obtiene información del destino basada en el método de envío
+     */
+    getDestinationInfo(request) {
+        const defaultInfo = {
+            country: request.route_info?.destination_country || 'N/A',
+            address: 'N/A',
+            contact: null,
+            company: null
+        };
+
+        if (!request.method_details) return defaultInfo;
+
+        const details = request.method_details;
+        
+        switch (request.shipping_method) {
+            case 'nacional':
+                return {
+                    country: 'México',
+                    address: details.delivery_place || 'N/A',
+                    contact: null,
+                    company: null
+                };
+                
+            case 'fedex':
+                return {
+                    country: request.route_info?.destination_country || 'N/A',
+                    address: details.destination_address || 'N/A',
+                    contact: details.destination_contact_name || null,
+                    company: details.destination_company_name || null
+                };
+                
+            case 'aereo_maritimo':
+                return {
+                    country: request.route_info?.destination_country || 'N/A',
+                    address: details.delivery_place || 'N/A',
+                    contact: details.destination_contact_name || null,
+                    company: details.destination_company_name || null
+                };
+                
+            default:
+                return defaultInfo;
+        }
+    }
+
+    /**
+     * Obtiene información de paquetes/carga
+     */
+    getPackageInfo(request) {
+        if (!request.method_details) {
+            return {
+                html: '<div class="alert alert-info">No hay información de carga disponible.</div>',
+                summary: null
+            };
+        }
+
+        const details = request.method_details;
+        let html = '<div class="grammer-info-card p-3">';
+        
+        switch (request.shipping_method) {
+            case 'nacional':
+                html += `
+                    <h6 class="text-grammer-primary mb-3">
+                        <i class="fas fa-boxes me-2"></i>Información de Carga
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 text-grammer-primary">${details.total_pallets || 0}</div>
+                                <small class="text-muted">Pallets</small>
                             </div>
                         </div>
-                    `).join('')}
-                </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 text-grammer-accent">${details.total_boxes || 0}</div>
+                                <small class="text-muted">Cajas</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 border rounded">
+                                <div class="h4 text-grammer-success">${details.weight_per_unit || 0}</div>
+                                <small class="text-muted">${details.weight_unit || 'kg'}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
                 
-                <div class="alert alert-grammer-primary mt-3 mb-0">
-                    <strong>Resumen Total:</strong><br>
-                    <i class="fas fa-boxes me-2"></i>Paquetes: ${request.package_summary.total_packages} |
-                    <i class="fas fa-weight me-2"></i>Peso: ${request.package_summary.total_weight} kg |
-                    <i class="fas fa-cubes me-2"></i>Cantidad: ${request.package_summary.total_quantity}
-                </div>
-            </div>
+            case 'fedex':
+                html += `
+                    <h6 class="text-grammer-primary mb-3">
+                        <i class="fas fa-box me-2"></i>Información del Paquete
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded">
+                                <strong class="text-grammer-primary">Peso Total:</strong><br>
+                                <span class="h5">${details.total_weight || 0} ${details.weight_unit || 'kg'}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded">
+                                <strong class="text-grammer-primary">Paquetes:</strong><br>
+                                <span class="h5">${details.total_packages || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${details.merchandise_description ? `
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <strong class="text-grammer-primary">Descripción:</strong><br>
+                        ${Utils.sanitizeString(details.merchandise_description)}
+                    </div>
+                    ` : ''}
+                `;
+                break;
+                
+            case 'aereo_maritimo':
+                html += `
+                    <h6 class="text-grammer-primary mb-3">
+                        <i class="fas fa-ship me-2"></i>Información de Carga
+                    </h6>
+                    <div class="alert alert-grammer-primary">
+                        <strong>Método Aéreo-Marítimo</strong><br>
+                        Información específica de carga disponible según cotizaciones.
+                    </div>
+                `;
+                break;
+                
+            default:
+                html += `
+                    <h6 class="text-grammer-primary mb-3">
+                        <i class="fas fa-question me-2"></i>Información de Carga
+                    </h6>
+                    <div class="alert alert-info">Información de carga no disponible para este método.</div>
+                `;
+        }
+        
+        html += '</div>';
+        
+        return { html };
+    }
+
+    /**
+     * Obtiene detalles específicos del método
+     */
+    getMethodSpecificDetailsHTML(request) {
+        if (!request.method_details) return '';
+        
+        const details = request.method_details;
+        let html = '<div class="grammer-info-card p-3 mt-3">';
+        
+        html += `
+            <h6 class="text-grammer-primary mb-3">
+                <i class="fas fa-clipboard-list me-2"></i>Detalles Específicos
+            </h6>
         `;
+        
+        switch (request.shipping_method) {
+            case 'nacional':
+                html += `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong class="text-grammer-primary">Número de Orden:</strong><br>
+                            <span>${details.order_number || 'N/A'}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong class="text-grammer-primary">Fecha de Recolección:</strong><br>
+                            <span>${details.pickup_date || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'fedex':
+                html += `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <strong class="text-grammer-primary">Número de Orden:</strong><br>
+                            <span>${details.order_number || 'N/A'}</span>
+                        </div>
+                    </div>
+                `;
+                break;
+                
+            case 'aereo_maritimo':
+                html += `
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="alert alert-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Detalles específicos disponibles según el tipo de servicio aéreo-marítimo seleccionado.
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+
+    /**
+     * Obtiene el nombre para mostrar del método de envío
+     */
+    getMethodDisplayName(method) {
+        const methodNames = {
+            'nacional': 'Nacional',
+            'fedex': 'FedEx',
+            'aereo_maritimo': 'Aéreo-Marítimo'
+        };
+        
+        return methodNames[method] || method || 'N/A';
     }
     
     /**

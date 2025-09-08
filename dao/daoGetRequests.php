@@ -24,7 +24,7 @@ try {
     $input = file_get_contents('php://input');
     $filters = json_decode($input, true) ?? [];
 
-    // Construir consulta base usando la vista consolidada
+    // Construir consulta base
     $sql = "SELECT 
                 sr.id, 
                 sr.internal_reference,
@@ -33,10 +33,6 @@ try {
                 sr.status, 
                 sr.shipping_method,
                 sr.service_type,
-                sr.origin_details, 
-                sr.destination_details, 
-                sr.package_details,
-                sr.method_specific_data,
                 sr.created_at, 
                 sr.updated_at,
                 COUNT(q.id) as quotes_count,
@@ -163,7 +159,7 @@ function processRequestRow($row, $conex) {
         ]
     ];
 
-    // Procesar datos específicos del método
+    // Obtener datos específicos del método
     if (!empty($row['shipping_method'])) {
         $methodDetails = getMethodSpecificDetails($conex, $row['id'], $row['shipping_method']);
         $request['method_details'] = $methodDetails;
@@ -171,13 +167,13 @@ function processRequestRow($row, $conex) {
         // Generar información de ruta basada en el método
         $request['route_info'] = generateRouteInfo($methodDetails, $row['shipping_method']);
     } else {
-        // Solicitud tradicional - usar campos legacy
-        $request['origin_details'] = json_decode($row['origin_details'], true);
-        $request['destination_details'] = json_decode($row['destination_details'], true);
-        $request['package_details'] = json_decode($row['package_details'], true);
-        
-        $request['route_info'] = generateLegacyRouteInfo($request['origin_details'], $request['destination_details']);
-        $request['package_summary'] = generatePackageSummary($request['package_details']);
+        // Solicitud sin método específico (puede ser un error de datos)
+        $request['method_details'] = null;
+        $request['route_info'] = [
+            'origin_country' => 'N/A',
+            'destination_country' => 'N/A',
+            'is_international' => false
+        ];
     }
 
     return $request;
@@ -285,52 +281,29 @@ function generateRouteInfo($methodDetails, $shippingMethod) {
 }
 
 /**
- * Genera información de ruta para solicitudes legacy
- */
-function generateLegacyRouteInfo($origin, $destination) {
-    return [
-        'origin_country' => $origin['country'] ?? 'N/A',
-        'destination_country' => $destination['country'] ?? 'N/A',
-        'is_international' => ($origin['country'] ?? '') !== ($destination['country'] ?? '')
-    ];
-}
-
-/**
  * Extrae país de una dirección (función auxiliar)
  */
 function extractCountryFromAddress($address) {
+    if (empty($address)) {
+        return 'N/A';
+    }
+    
     // Lógica simple - en un sistema real se podría usar API de geolocalización
-    if (stripos($address, 'méxico') !== false || stripos($address, 'mexico') !== false) {
+    $address_lower = strtolower($address);
+    
+    if (strpos($address_lower, 'méxico') !== false || strpos($address_lower, 'mexico') !== false) {
         return 'MX';
-    } elseif (stripos($address, 'estados unidos') !== false || stripos($address, 'usa') !== false) {
+    } elseif (strpos($address_lower, 'estados unidos') !== false || strpos($address_lower, 'usa') !== false || strpos($address_lower, 'united states') !== false) {
         return 'US';
-    } elseif (stripos($address, 'querétaro') !== false || stripos($address, 'queretaro') !== false) {
+    } elseif (strpos($address_lower, 'querétaro') !== false || strpos($address_lower, 'queretaro') !== false) {
         return 'MX';
+    } elseif (strpos($address_lower, 'texas') !== false || strpos($address_lower, 'tx') !== false) {
+        return 'US';
+    } elseif (strpos($address_lower, 'california') !== false || strpos($address_lower, 'ca') !== false) {
+        return 'US';
     } else {
         return 'INTL';
     }
-}
-
-/**
- * Genera resumen de paquetes para solicitudes legacy
- */
-function generatePackageSummary($packages) {
-    if (!is_array($packages)) return null;
-    
-    $totalPackages = count($packages);
-    $totalWeight = 0;
-    $totalQuantity = 0;
-    
-    foreach ($packages as $package) {
-        $totalWeight += (float)($package['weight'] ?? 0);
-        $totalQuantity += (int)($package['quantity'] ?? 0);
-    }
-    
-    return [
-        'total_packages' => $totalPackages,
-        'total_weight' => $totalWeight,
-        'total_quantity' => $totalQuantity
-    ];
 }
 
 /**
@@ -348,7 +321,7 @@ function generateRequestStats($conex, $filters = []) {
         $methodStats = getMethodStats($conex, $filters);
         $stats['by_shipping_method'] = $methodStats;
         
-        // Estadísticas por tipo de servicio (legacy)
+        // Estadísticas por tipo de servicio
         $serviceStats = getServiceTypeStats($conex, $filters);
         $stats['by_service_type'] = $serviceStats;
         
@@ -401,10 +374,10 @@ function getMethodStats($conex, $filters) {
     $whereClause = buildWhereClause($filters);
     
     $sql = "SELECT 
-                COALESCE(shipping_method, 'legacy') as shipping_method,
+                shipping_method,
                 COUNT(*) as count
             FROM shipping_requests" . $whereClause['sql'] . "
-            GROUP BY COALESCE(shipping_method, 'legacy')";
+            GROUP BY shipping_method";
     
     $stmt = $conex->prepare($sql);
     if (!empty($whereClause['params'])) {

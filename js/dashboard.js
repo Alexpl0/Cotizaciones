@@ -557,7 +557,6 @@ class GrammerDashboard {
     
     /**
      * Genera el HTML para los detalles de una solicitud con estilo GRAMMER
-     * Maneja tanto solicitudes GRAMMER como legacy
      * @param {Object} request 
      * @returns {string}
      */
@@ -574,12 +573,8 @@ class GrammerDashboard {
             'completed': 'Completado',
             'canceled': 'Cancelado'
         };
-
-        // Verificar si es solicitud GRAMMER (tiene method_details) o legacy
-        const isGrammerRequest = request.method_details && request.route_info;
         
-        // Información básica (común para ambos tipos)
-        let html = `
+        return `
             <div class="row">
                 <div class="col-md-6 mb-4">
                     <div class="grammer-info-card p-3">
@@ -591,40 +586,20 @@ class GrammerDashboard {
                                 <strong class="text-grammer-primary">ID:</strong>
                                 <span class="ms-2">#${request.id}</span>
                             </div>
-                            ${request.internal_reference ? `
-                            <div class="col-12">
-                                <strong class="text-grammer-primary">Referencia:</strong>
-                                <span class="ms-2">${request.internal_reference}</span>
-                            </div>
-                            ` : ''}
                             <div class="col-12">
                                 <strong class="text-grammer-primary">Usuario:</strong>
                                 <span class="ms-2">${Utils.sanitizeString(request.user_name)}</span>
                             </div>
-                            ${request.company_area ? `
-                            <div class="col-12">
-                                <strong class="text-grammer-primary">Área:</strong>
-                                <span class="ms-2">${Utils.sanitizeString(request.company_area)}</span>
-                            </div>
-                            ` : ''}
                             <div class="col-12">
                                 <strong class="text-grammer-primary">Servicio:</strong>
                                 <span class="grammer-badge bg-grammer-secondary ms-2">
-                                    ${serviceTypeNames[request.service_type] || request.service_type}
+                                    ${serviceTypeNames[request.service_type]}
                                 </span>
                             </div>
-                            ${request.shipping_method ? `
-                            <div class="col-12">
-                                <strong class="text-grammer-primary">Método:</strong>
-                                <span class="grammer-badge bg-grammer-accent ms-2">
-                                    ${request.shipping_method.toUpperCase()}
-                                </span>
-                            </div>
-                            ` : ''}
                             <div class="col-12">
                                 <strong class="text-grammer-primary">Estado:</strong>
                                 <span class="grammer-badge ${this.getStatusBadgeClass(request.status)} ms-2">
-                                    ${statusNames[request.status] || request.status}
+                                    ${statusNames[request.status]}
                                 </span>
                             </div>
                         </div>
@@ -665,120 +640,36 @@ class GrammerDashboard {
                         `}
                     </div>
                 </div>
-            </div>`;
+            </div>
 
-    if (isGrammerRequest) {
-        // *** SOLICITUD GRAMMER NUEVA ***
-        html += this.generateGrammerRequestDetails(request);
-    } else {
-        // *** SOLICITUD LEGACY ***
-        html += this.generateLegacyRequestDetails(request);
-    }
-
-    return html;
-}
-
-/**
- * Genera detalles para solicitudes GRAMMER nuevas
- * @param {Object} request 
- * @returns {string}
- */
-generateGrammerRequestDetails(request) {
-    const methodDetails = request.method_details;
-    const routeInfo = request.route_info;
-    
-    let html = `
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="grammer-info-card p-3">
-                    <h6 class="text-grammer-primary mb-3">
-                        <i class="fas fa-route me-2"></i>Información de Ruta
-                    </h6>
-                    <div class="row">
-                        <div class="col-md-4">
-                            <strong class="text-grammer-primary">Origen:</strong>
-                            <span class="ms-2">${routeInfo.origin_country}</span>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="grammer-info-card p-3">
+                        <h6 class="text-grammer-primary mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>Origen
+                        </h6>
+                        <div class="text-grammer-primary">
+                            <div><strong>País:</strong> ${request.origin_details.country}</div>
+                            <div><strong>Código Postal:</strong> ${request.origin_details.postal_code}</div>
+                            <div><strong>Dirección:</strong> ${request.origin_details.address}</div>
                         </div>
-                        <div class="col-md-4">
-                            <strong class="text-grammer-primary">Destino:</strong>
-                            <span class="ms-2">${routeInfo.destination_country}</span>
-                        </div>
-                        <div class="col-md-4">
-                            <strong class="text-grammer-primary">Tipo:</strong>
-                            <span class="grammer-badge ${routeInfo.is_international ? 'bg-grammer-accent' : 'bg-grammer-success'} ms-2">
-                                ${routeInfo.is_international ? 'Internacional' : 'Nacional'}
-                            </span>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <div class="grammer-info-card p-3">
+                        <h6 class="text-grammer-primary mb-3">
+                            <i class="fas fa-flag-checkered me-2"></i>Destino
+                        </h6>
+                        <div class="text-grammer-primary">
+                            <div><strong>País:</strong> ${request.destination_details.country}</div>
+                            <div><strong>Código Postal:</strong> ${request.destination_details.postal_code}</div>
+                            <div><strong>Dirección:</strong> ${request.destination_details.address}</div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>`;
 
-    // Generar detalles específicos según el método de envío
-    switch (request.shipping_method) {
-        case 'fedex':
-            html += this.generateFedexDetails(methodDetails);
-            break;
-        case 'aereo_maritimo':
-            html += this.generateAereoMaritimoDetails(methodDetails);
-            break;
-        case 'nacional':
-            html += this.generateNacionalDetails(methodDetails);
-            break;
-        default:
-            html += this.generateGenericMethodDetails(methodDetails);
-    }
-
-    return html;
-}
-
-/**
- * Genera detalles para solicitudes legacy
- * @param {Object} request 
- * @returns {string}
- */
-generateLegacyRequestDetails(request) {
-    if (!request.origin_details || !request.destination_details) {
-        return `
-            <div class="alert alert-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Información de origen y destino no disponible.
-            </div>
-        `;
-    }
-
-    let html = `
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="grammer-info-card p-3">
-                    <h6 class="text-grammer-primary mb-3">
-                        <i class="fas fa-map-marker-alt me-2"></i>Origen
-                    </h6>
-                    <div class="text-grammer-primary">
-                        <div><strong>País:</strong> ${request.origin_details.country}</div>
-                        <div><strong>Código Postal:</strong> ${request.origin_details.postal_code}</div>
-                        <div><strong>Dirección:</strong> ${request.origin_details.address}</div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6 mb-4">
-                <div class="grammer-info-card p-3">
-                    <h6 class="text-grammer-primary mb-3">
-                        <i class="fas fa-flag-checkered me-2"></i>Destino
-                    </h6>
-                    <div class="text-grammer-primary">
-                        <div><strong>País:</strong> ${request.destination_details.country}</div>
-                        <div><strong>Código Postal:</strong> ${request.destination_details.postal_code}</div>
-                        <div><strong>Dirección:</strong> ${request.destination_details.address}</div>
-                    </div>
-                </div>
-            </div>
-        </div>`;
-
-    // Información de paquetes legacy
-    if (request.package_details && Array.isArray(request.package_details)) {
-        html += `
             <div class="grammer-info-card p-3">
                 <h6 class="text-grammer-primary mb-3">
                     <i class="fas fa-box me-2"></i>Paquetes (${request.package_details.length})
@@ -798,184 +689,261 @@ generateLegacyRequestDetails(request) {
                     `).join('')}
                 </div>
                 
-                ${request.package_summary ? `
                 <div class="alert alert-grammer-primary mt-3 mb-0">
                     <strong>Resumen Total:</strong><br>
                     <i class="fas fa-boxes me-2"></i>Paquetes: ${request.package_summary.total_packages} |
                     <i class="fas fa-weight me-2"></i>Peso: ${request.package_summary.total_weight} kg |
                     <i class="fas fa-cubes me-2"></i>Cantidad: ${request.package_summary.total_quantity}
                 </div>
-                ` : ''}
             </div>
         `;
     }
-
-    return html;
-}
-
-/**
- * Genera detalles específicos para FedEx
- * @param {Object} methodDetails 
- * @returns {string}
- */
-generateFedexDetails(methodDetails) {
-    return `
-        <div class="grammer-info-card p-3">
-            <h6 class="text-grammer-primary mb-3">
-                <i class="fas fa-shipping-fast me-2"></i>Detalles FedEx
-            </h6>
-            <div class="row g-3">
-                ${methodDetails.origin_address ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Dirección Origen:</strong>
-                    <p class="mb-1">${methodDetails.origin_address}</p>
+    
+    /**
+     * Muestra las cotizaciones de una solicitud
+     * @param {number} requestId 
+     */
+    async showQuotes(requestId) {
+        try {
+            const modalContent = document.getElementById('quotesModalContent');
+            modalContent.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-grammer-primary"></div>
+                    <p class="mt-2 text-grammer-primary">Cargando cotizaciones GRAMMER...</p>
                 </div>
-                ` : ''}
-                ${methodDetails.destination_address ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Dirección Destino:</strong>
-                    <p class="mb-1">${methodDetails.destination_address}</p>
-                </div>
-                ` : ''}
-                ${methodDetails.package_weight ? `
-                <div class="col-md-3">
-                    <strong class="text-grammer-primary">Peso:</strong>
-                    <span class="ms-2">${methodDetails.package_weight} ${methodDetails.weight_unit || 'kg'}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.package_dimensions ? `
-                <div class="col-md-9">
-                    <strong class="text-grammer-primary">Dimensiones:</strong>
-                    <span class="ms-2">${methodDetails.package_dimensions}</span>
-                </div>
-                ` : ''}
+            `;
+            
+            this.quotesModal.show();
+            
+            const quotesData = await API.getQuotes(requestId);
+            
+            if (!quotesData.quotes || quotesData.quotes.length === 0) {
+                modalContent.innerHTML = '<div class="alert alert-info">No hay cotizaciones disponibles.</div>';
+                return;
+            }
+            
+            modalContent.innerHTML = this.generateQuotesHTML(quotesData);
+            
+        } catch (error) {
+            document.getElementById('quotesModalContent').innerHTML = 
+                '<div class="alert alert-danger">Error cargando cotizaciones: ' + error.message + '</div>';
+            Utils.handleError(error, 'Show quotes');
+        }
+    }
+    
+    /**
+     * Genera el HTML para las cotizaciones con estilo GRAMMER
+     * @param {Object} quotesData 
+     * @returns {string}
+     */
+    generateQuotesHTML(quotesData) {
+        const quotes = quotesData.quotes;
+        
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="bg-grammer-primary text-white">
+                        <tr>
+                            <th>Transportista</th>
+                            <th>Costo</th>
+                            <th>Tiempo</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        quotes.forEach(quote => {
+            html += `
+                <tr class="${quote.is_selected ? 'table-success' : ''}">
+                    <td>
+                        <strong class="text-grammer-primary">${quote.carrier_name}</strong><br>
+                        <small class="text-muted">${quote.carrier_email}</small>
+                    </td>
+                    <td>
+                        <span class="fw-bold text-grammer-success">${quote.cost_formatted}</span>
+                        ${quote.is_best_price ? '<i class="fas fa-crown text-warning ms-1" title="Mejor precio"></i>' : ''}
+                    </td>
+                    <td>
+                        ${quote.delivery_formatted}
+                        ${quote.is_fastest ? '<i class="fas fa-bolt text-grammer-accent ms-1" title="Más rápido"></i>' : ''}
+                    </td>
+                    <td>
+                        ${quote.is_selected ? 
+                            '<span class="grammer-badge bg-grammer-success">Seleccionada</span>' : 
+                            '<span class="grammer-badge bg-secondary">Disponible</span>'
+                        }
+                    </td>
+                    <td>
+                        ${!quote.is_selected ? `
+                            <button class="btn btn-grammer-success btn-sm" onclick="grammerDashboard.selectQuote(${quote.id})">
+                                <i class="fas fa-check me-1"></i>Seleccionar
+                            </button>
+                        ` : `
+                            <i class="fas fa-check-circle text-grammer-success"></i>
+                            Seleccionada
+                        `}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
             </div>
-        </div>
-    `;
+        `;
+        
+        return html;
+    }
+    
+    /**
+     * Selecciona una cotización
+     * @param {number} quoteId 
+     */
+    async selectQuote(quoteId) {
+        const result = await Notifications.confirm(
+            '¿Seleccionar esta cotización GRAMMER?',
+            'Esta acción marcará la cotización como seleccionada.',
+            'Sí, seleccionar'
+        );
+        
+        if (result.isConfirmed) {
+            try {
+                await API.selectQuote(quoteId);
+                
+                // Recargar cotizaciones
+                const requestId = this.getCurrentRequestId();
+                if (requestId) {
+                    await this.showQuotes(requestId);
+                }
+                
+                this.refreshData();
+                
+            } catch (error) {
+                Notifications.toastError('Error seleccionando cotización');
+                Utils.handleError(error, 'Select quote');
+            }
+        }
+    }
+    
+    /**
+     * Obtiene el ID de solicitud actual del modal
+     * @returns {number|null}
+     */
+    getCurrentRequestId() {
+        const modal = document.getElementById('quotesModal');
+        return modal.dataset.requestId ? parseInt(modal.dataset.requestId) : null;
+    }
+    
+    /**
+     * Inicia el auto-refresh
+     */
+    startAutoRefresh() {
+        this.pollingInstance = API.startRequestsPolling((data) => {
+            this.updateRequestsTable(data.requests);
+            this.updateStats(data.stats);
+            this.updateCharts(data.stats);
+            this.updateTopUsers(data.stats.top_users);
+            
+            this.lastUpdate = new Date();
+            this.updateAutoRefreshIndicator();
+        });
+        
+        console.log('🔄 Auto-refresh GRAMMER iniciado');
+    }
+    
+    /**
+     * Actualiza el indicador de auto-refresh
+     */
+    updateAutoRefreshIndicator() {
+        if (this.lastUpdate) {
+            const timeAgo = this.getTimeAgo(this.lastUpdate.toISOString());
+            const small = this.autoRefreshIndicator.querySelector('small');
+            if (small) {
+                small.textContent = `Actualizado ${timeAgo}`;
+            }
+        }
+    }
+    
+    /**
+     * Maneja cambios de visibilidad de la página
+     */
+    handleVisibilityChange() {
+        if (document.hidden) {
+            if (this.pollingInstance) {
+                this.pollingInstance.stop();
+                console.log('⏸️ Auto-refresh pausado');
+            }
+        } else {
+            this.startAutoRefresh();
+            this.refreshData();
+            console.log('▶️ Auto-refresh reanudado');
+        }
+    }
+    
+    /**
+     * Muestra/oculta el estado de carga
+     * @param {boolean} show 
+     */
+    showLoadingState(show) {
+        this.loadingState.classList.toggle('d-none', !show);
+        this.requestsTableBody.classList.toggle('d-none', show);
+    }
+    
+    /**
+     * Muestra/oculta el estado vacío
+     * @param {boolean} show 
+     */
+    showEmptyState(show) {
+        this.emptyState.classList.toggle('d-none', !show);
+        this.requestsTableBody.classList.toggle('d-none', show);
+    }
+    
+    /**
+     * Calcula tiempo transcurrido
+     * @param {string} dateString 
+     * @returns {string}
+     */
+    getTimeAgo(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) return 'ahora mismo';
+        if (diffMins < 60) return `hace ${diffMins} min`;
+        if (diffHours < 24) return `hace ${diffHours}h`;
+        return `hace ${diffDays}d`;
+    }
+    
+    /**
+     * Limpia recursos antes de salir
+     */
+    cleanup() {
+        if (this.pollingInstance) {
+            this.pollingInstance.stop();
+        }
+        
+        // Limpiar charts
+        Object.values(this.charts).forEach(chart => {
+            if (chart && chart.destroy) {
+                chart.destroy();
+            }
+        });
+    }
 }
 
-/**
- * Genera detalles específicos para Aéreo-Marítimo
- * @param {Object} methodDetails 
- * @returns {string}
- */
-generateAereoMaritimoDetails(methodDetails) {
-    return `
-        <div class="grammer-info-card p-3">
-            <h6 class="text-grammer-primary mb-3">
-                <i class="fas fa-ship me-2"></i>Detalles Aéreo-Marítimo
-            </h6>
-            <div class="row g-3">
-                ${methodDetails.pickup_address ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Dirección Recogida:</strong>
-                    <p class="mb-1">${methodDetails.pickup_address}</p>
-                </div>
-                ` : ''}
-                ${methodDetails.delivery_place ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Lugar Entrega:</strong>
-                    <p class="mb-1">${methodDetails.delivery_place}</p>
-                </div>
-                ` : ''}
-                ${methodDetails.pickup_date ? `
-                <div class="col-md-4">
-                    <strong class="text-grammer-primary">Fecha Recogida:</strong>
-                    <span class="ms-2">${methodDetails.pickup_date}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.delivery_date_plant ? `
-                <div class="col-md-4">
-                    <strong class="text-grammer-primary">Fecha Entrega:</strong>
-                    <span class="ms-2">${methodDetails.delivery_date_plant}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.incoterm ? `
-                <div class="col-md-4">
-                    <strong class="text-grammer-primary">Incoterm:</strong>
-                    <span class="grammer-badge bg-grammer-accent ms-2">${methodDetails.incoterm}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.total_pallets || methodDetails.total_boxes ? `
-                <div class="col-12">
-                    <div class="alert alert-grammer-primary mb-0">
-                        <strong>Carga:</strong>
-                        ${methodDetails.total_pallets ? `<i class="fas fa-pallet me-1"></i>Pallets: ${methodDetails.total_pallets}` : ''}
-                        ${methodDetails.total_boxes ? `<i class="fas fa-boxes me-1 ms-3"></i>Cajas: ${methodDetails.total_boxes}` : ''}
-                        ${methodDetails.weight_per_unit ? `<i class="fas fa-weight me-1 ms-3"></i>Peso/Unidad: ${methodDetails.weight_per_unit} ${methodDetails.weight_unit || 'kg'}` : ''}
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-}
+// Instancia global para acceso desde HTML
+let grammerDashboard;
 
-/**
- * Genera detalles específicos para Nacional
- * @param {Object} methodDetails 
- * @returns {string}
- */
-generateNacionalDetails(methodDetails) {
-    return `
-        <div class="grammer-info-card p-3">
-            <h6 class="text-grammer-primary mb-3">
-                <i class="fas fa-truck me-2"></i>Detalles Envío Nacional
-            </h6>
-            <div class="row g-3">
-                ${methodDetails.pickup_address ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Dirección Recogida:</strong>
-                    <p class="mb-1">${methodDetails.pickup_address}</p>
-                </div>
-                ` : ''}
-                ${methodDetails.delivery_address ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Dirección Entrega:</strong>
-                    <p class="mb-1">${methodDetails.delivery_address}</p>
-                </div>
-                ` : ''}
-                ${methodDetails.pickup_date ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Fecha Recogida:</strong>
-                    <span class="ms-2">${methodDetails.pickup_date}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.delivery_date ? `
-                <div class="col-md-6">
-                    <strong class="text-grammer-primary">Fecha Entrega:</strong>
-                    <span class="ms-2">${methodDetails.delivery_date}</span>
-                </div>
-                ` : ''}
-                ${methodDetails.total_pieces || methodDetails.total_weight_kg ? `
-                <div class="col-12">
-                    <div class="alert alert-grammer-primary mb-0">
-                        <strong>Carga:</strong>
-                        ${methodDetails.total_pieces ? `<i class="fas fa-boxes me-1"></i>Piezas: ${methodDetails.total_pieces}` : ''}
-                        ${methodDetails.total_weight_kg ? `<i class="fas fa-weight me-1 ms-3"></i>Peso Total: ${methodDetails.total_weight_kg} kg` : ''}
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Genera detalles genéricos para métodos no especificados
- * @param {Object} methodDetails 
- * @returns {string}
- */
-generateGenericMethodDetails(methodDetails) {
-    return `
-        <div class="grammer-info-card p-3">
-            <h6 class="text-grammer-primary mb-3">
-                <i class="fas fa-info-circle me-2"></i>Detalles del Método
-            </h6>
-            <pre class="bg-light p-3 rounded">${JSON.stringify(methodDetails, null, 2)}</pre>
-        </div>
-    `;
-}
-
-// ...existing code...
-}
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    grammerDashboard = new GrammerDashboard();
+    
+    // Hacer disponible globalmente para onclick handlers
+    window.grammerDashboard = grammerDashboard;
+});

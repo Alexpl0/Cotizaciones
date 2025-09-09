@@ -118,16 +118,21 @@ export default class AereoMaritimoForm extends BaseForm {
             </div>
             
             <div class="row mb-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="contactName" class="form-label">Nombre del Contacto</label>
                     <input type="text" class="form-control form-control-custom" 
                            id="contactName" name="contact_name" required>
                     <div class="invalid-feedback">Ingrese el nombre del contacto.</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="contactPhone" class="form-label">Teléfono</label>
                     <input type="tel" class="form-control form-control-custom" 
                            id="contactPhone" name="contact_phone">
+                </div>
+                <div class="col-md-4">
+                    <label for="contactEmail" class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-control form-control-custom" 
+                           id="contactEmail" name="contact_email">
                 </div>
             </div>
             
@@ -170,19 +175,54 @@ export default class AereoMaritimoForm extends BaseForm {
                 </div>
             </div>
             
-            <div class="row mb-4">
+            <!-- Sección mejorada del lugar de entrega -->
+            <div class="row mb-3">
                 <div class="col-md-6">
-                    <label for="deliveryPlace" class="form-label">Lugar de Entrega</label>
-                    <textarea class="form-control form-control-custom" 
-                              id="deliveryPlace" name="delivery_place" rows="2" required 
-                              placeholder="Dirección o puerto/aeropuerto de destino..."></textarea>
-                    <div class="invalid-feedback">Ingrese el lugar de entrega.</div>
+                    <label for="deliveryPointType" class="form-label">
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        Tipo de Lugar de Entrega
+                    </label>
+                    <select class="form-select form-control-custom" 
+                            id="deliveryPointType" name="delivery_point_type" required>
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="pickup_point">Punto de Recolección</option>
+                        <option value="final_destination">Destino Final</option>
+                        <option value="company_address">Dirección de Empresa</option>
+                        <option value="warehouse">Almacén/Bodega</option>
+                    </select>
+                    <div class="invalid-feedback">Seleccione el tipo de lugar de entrega.</div>
+                    <small class="form-text text-muted">
+                        Especifique si es donde el transportista debe recoger o entregar la mercancía
+                    </small>
                 </div>
                 <div class="col-md-6">
+                    <label for="deliveryCompanyName" class="form-label">Nombre de la Empresa/Lugar</label>
+                    <input type="text" class="form-control form-control-custom" 
+                           id="deliveryCompanyName" name="delivery_company_name" 
+                           placeholder="Nombre de la empresa o lugar específico">
+                    <small class="form-text text-muted">
+                        Ej: GRAMMER México, Almacén Central, etc.
+                    </small>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-8">
+                    <label for="deliveryPlace" class="form-label">Dirección Completa del Lugar</label>
+                    <textarea class="form-control form-control-custom" 
+                              id="deliveryPlace" name="delivery_place" rows="3" required 
+                              placeholder="Dirección completa, incluyendo código postal, ciudad y país..."></textarea>
+                    <div class="invalid-feedback">Ingrese la dirección completa del lugar de entrega.</div>
+                    <small class="form-text text-muted">
+                        Incluya todos los detalles necesarios: calle, número, colonia, código postal, ciudad, estado/provincia, país
+                    </small>
+                </div>
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="deliveryDatePlant" class="form-label">Fecha de Entrega en Planta</label>
+                        <label for="deliveryDatePlant" class="form-label">Fecha de Entrega Requerida</label>
                         <input type="date" class="form-control form-control-custom" 
                                id="deliveryDatePlant" name="delivery_date_plant">
+                        <small class="form-text text-muted">Fecha estimada de entrega</small>
                     </div>
                     <div>
                         <label for="orderNumber" class="form-label">Número de Orden</label>
@@ -249,9 +289,12 @@ export default class AereoMaritimoForm extends BaseForm {
             
             contact_name: formElements.contact_name.value,
             contact_phone: formElements.contact_phone?.value || '',
+            contact_email: formElements.contact_email?.value || '',
             
             incoterm: formElements.incoterm.value,
             delivery_type: formElements.delivery_type?.value || null,
+            delivery_point_type: formElements.delivery_point_type.value,
+            delivery_company_name: formElements.delivery_company_name?.value || '',
             delivery_place: formElements.delivery_place.value,
             delivery_date_plant: formElements.delivery_date_plant?.value || null,
             order_number: formElements.order_number?.value || ''

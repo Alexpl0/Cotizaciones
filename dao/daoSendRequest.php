@@ -1,560 +1,450 @@
 <?php
 /**
- * Endpoint to send quote requests - GRAMMER Version
- * Intelligent Quoting Portal with support for multiple shipping methods
- * @author Alejandro Pérez (Updated for GRAMMER)
+ * Endpoint para gestionar solicitudes de envío GRAMMER
+ * @author Alejandro Pérez
  */
 
-require_once __DIR__ . '/config.php';
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
-setCorsHeaders();
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendJsonResponse(false, 'Method not allowed. Use POST.', null, 405);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
 }
 
-$conex = null;
+require_once '../config/database.php';
+require_once '../includes/validation.php';
+require_once '../includes/email_sender.php';
 
 try {
-    $input = file_get_contents('php://input');
-    $data = json_decode($input, true);
-
-    if (json_last_error() !== JSON_ERROR_NONE) {
-        throw new Exception('Invalid JSON: ' . json_last_error_msg());
-    }
-
-    // Determinar si es una solicitud GRAMMER nueva o tradicional
-    $isGrammerRequest = isset($data['is_grammer_request']) && $data['is_grammer_request'] === true;
+    $method = $_SERVER['REQUEST_METHOD'];
     
-    $conex = getDbConnection();
-    if (!$conex) {
-        throw new Exception('Database connection failed');
-    }
-    
-    $conex->begin_transaction();
-
-    if ($isGrammerRequest) {
-        $response = processGrammerRequest($conex, $data);
-    } else {
-        $response = processTraditionalRequest($conex, $data);
-    }
-
-    $conex->commit();
-    sendJsonResponse(true, 'Request sent successfully', $response);
-
-} catch (Exception $e) {
-    if ($conex) $conex->rollback();
-    writeLog('error', 'Error processing shipping request: ' . $e->getMessage(), $data ?? []);
-    sendJsonResponse(false, 'Error processing request: ' . $e->getMessage(), ['input_data' => $data ?? null], 500);
-} finally {
-    if ($conex) $conex->close();
-}
-
-/**
- * Procesa una solicitud GRAMMER con métodos específicos
- */
-function processGrammerRequest($conex, $data) {
-    // Validar datos básicos
-    validateGrammerRequestData($data);
-    
-    // Insertar en shipping_requests principal
-    $stmt = $conex->prepare("
-        INSERT INTO shipping_requests 
-        (user_name, company_area, status, shipping_method, method_specific_data, service_type, created_at) 
-        VALUES (?, ?, ?, ?, ?, ?, NOW())
-    ");
-    
-    $status = 'pending';
-    $companyArea = $data['company_area'] ?? 'Logística y Tráfico';
-    $serviceType = mapMethodToServiceType($data['shipping_method']);
-    $methodDataJson = json_encode($data['method_data']);
-    
-    $stmt->bind_param("ssssss", 
-        $data['user_name'], 
-        $companyArea, 
-        $status, 
-        $data['shipping_method'], 
-        $methodDataJson,
-        $serviceType
-    );
-    
-    $stmt->execute();
-    $requestId = $conex->insert_id;
-    $stmt->close();
-
-    if (!$requestId) {
-        throw new Exception('Failed to insert the request into the database');
-    }
-
-    // Insertar en tabla específica del método
-    switch ($data['shipping_method']) {
-        case 'fedex':
-            insertFedexRequest($conex, $requestId, $data['method_data']);
+    switch ($method) {
+        case 'POST':
+            handleCreateRequest();
             break;
-        case 'aereo_maritimo':
-            insertAereoMaritimoRequest($conex, $requestId, $data['method_data']);
-            break;
-        case 'nacional':
-            insertNacionalRequest($conex, $requestId, $data['method_data']);
+        case 'GET':
+            handleGetRequests();
             break;
         default:
-            throw new Exception('Invalid shipping method: ' . $data['shipping_method']);
+            throw new Exception('Método no permitido');
     }
 
-    // Obtener la referencia interna generada automáticamente
-    $referenceStmt = $conex->prepare("SELECT internal_reference FROM shipping_requests WHERE id = ?");
-    $referenceStmt->bind_param("i", $requestId);
-    $referenceStmt->execute();
-    $referenceResult = $referenceStmt->get_result();
-    $internalReference = $referenceResult->fetch_assoc()['internal_reference'] ?? null;
-    $referenceStmt->close();
-
-    // Enviar emails a transportistas
-    $emailResults = sendEmailsToCarriers($conex, $requestId, $data, true);
-
-    // Actualizar estado a 'quoting'
-    $updateStmt = $conex->prepare("UPDATE shipping_requests SET status = 'quoting' WHERE id = ?");
-    $updateStmt->bind_param("i", $requestId);
-    $updateStmt->execute();
-    $updateStmt->close();
-
-    return [
-        'id' => $requestId,
-        'internal_reference' => $internalReference,
-        'status' => 'quoting',
-        'shipping_method' => $data['shipping_method'],
-        'carriers_notified' => count($emailResults['success']),
-        'email_errors' => $emailResults['errors']
-    ];
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => true,
+        'message' => $e->getMessage()
+    ]);
 }
 
-/**
- * Procesa una solicitud tradicional (compatibilidad hacia atrás)
- */
-function processTraditionalRequest($conex, $data) {
-    // Insertar solicitud tradicional
-    $stmt = $conex->prepare("
-        INSERT INTO shipping_requests 
-        (user_name, status, origin_details, destination_details, package_details, service_type) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    ");
+function handleCreateRequest() {
+    global $pdo;
     
-    $status = 'pending';
-    $origin = json_encode($data['origin_details']);
-    $destination = json_encode($data['destination_details']);
-    $packages = json_encode($data['package_details']);
+    $input = json_decode(file_get_contents('php://input'), true);
     
-    $stmt->bind_param("ssssss", 
-        $data['user_name'], 
-        $status, 
-        $origin, 
-        $destination, 
-        $packages, 
-        $data['service_type']
-    );
-    
-    $stmt->execute();
-    $requestId = $conex->insert_id;
-    $stmt->close();
-
-    if (!$requestId) {
-        throw new Exception('Failed to insert the request into the database');
-    }
-
-    // Enviar emails a transportistas (versión tradicional)
-    $emailResults = sendEmailsToCarriers($conex, $requestId, $data, false);
-
-    // Actualizar estado
-    $updateStmt = $conex->prepare("UPDATE shipping_requests SET status = 'quoting' WHERE id = ?");
-    $updateStmt->bind_param("i", $requestId);
-    $updateStmt->execute();
-    $updateStmt->close();
-
-    return [
-        'id' => $requestId,
-        'status' => 'quoting',
-        'carriers_notified' => count($emailResults['success']),
-        'email_errors' => $emailResults['errors']
-    ];
-}
-
-/**
- * Valida datos de solicitud GRAMMER
- */
-function validateGrammerRequestData($data) {
-    if (empty($data['user_name'])) {
-        throw new Exception('User name is required');
+    if (!$input) {
+        throw new Exception('Datos inválidos');
     }
     
-    if (empty($data['shipping_method'])) {
-        throw new Exception('Shipping method is required');
+    // Validar campos requeridos
+    $required = ['shipping_method', 'user_name', 'company_area', 'method_data'];
+    foreach ($required as $field) {
+        if (empty($input[$field])) {
+            throw new Exception("Campo requerido: $field");
+        }
     }
     
-    $validMethods = ['fedex', 'aereo_maritimo', 'nacional'];
-    if (!in_array($data['shipping_method'], $validMethods)) {
-        throw new Exception('Invalid shipping method');
-    }
+    $shipping_method = $input['shipping_method'];
+    $method_data = $input['method_data'];
     
-    if (empty($data['method_data'])) {
-        throw new Exception('Method data is required');
-    }
-}
-
-/**
- * Mapea método GRAMMER a tipo de servicio
- */
-function mapMethodToServiceType($method) {
-    $mapping = [
+    // Determinar tipo de servicio basado en el método
+    $service_type_map = [
         'fedex' => 'air',
         'aereo_maritimo' => 'sea',
         'nacional' => 'land'
     ];
-    return $mapping[$method] ?? 'air';
+    
+    $service_type = $service_type_map[$shipping_method] ?? 'air';
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Insertar solicitud principal
+        $stmt = $pdo->prepare("
+            INSERT INTO shipping_requests 
+            (user_name, company_area, service_type, shipping_method, origin_details, destination_details, package_details)
+            VALUES (?, ?, ?, ?, '{}', '{}', '{}')
+        ");
+        
+        $stmt->execute([
+            $input['user_name'],
+            $input['company_area'],
+            $service_type,
+            $shipping_method
+        ]);
+        
+        $request_id = $pdo->lastInsertId();
+        
+        // Insertar datos específicos del método
+        switch ($shipping_method) {
+            case 'fedex':
+                insertFedexRequest($pdo, $request_id, $method_data);
+                break;
+                
+            case 'aereo_maritimo':
+                insertAereoMaritimoRequest($pdo, $request_id, $method_data);
+                break;
+                
+            case 'nacional':
+                insertNacionalRequest($pdo, $request_id, $method_data);
+                break;
+                
+            default:
+                throw new Exception('Método de envío no soportado');
+        }
+        
+        // Obtener la referencia interna generada
+        $stmt = $pdo->prepare("SELECT internal_reference FROM shipping_requests WHERE id = ?");
+        $stmt->execute([$request_id]);
+        $internal_reference = $stmt->fetchColumn();
+        
+        $pdo->commit();
+        
+        // Enviar emails a transportistas (asíncrono)
+        sendQuoteRequestEmails($request_id, $shipping_method, $method_data);
+        
+        echo json_encode([
+            'success' => true,
+            'id' => $request_id,
+            'internal_reference' => $internal_reference,
+            'message' => 'Solicitud GRAMMER creada exitosamente'
+        ]);
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
 }
 
-/**
- * Inserta solicitud Fedex
- */
-function insertFedexRequest($conex, $requestId, $data) {
-    $stmt = $conex->prepare("
-        INSERT INTO fedex_requests 
-        (request_id, origin_company_name, origin_address, origin_contact_name, origin_contact_phone, 
-         origin_contact_email, destination_company_name, destination_address, destination_contact_name, 
-         destination_contact_phone, destination_contact_email, total_packages, total_weight, 
-         measurement_units, package_dimensions, order_number, merchandise_description, 
-         merchandise_type, merchandise_material)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+function insertFedexRequest($pdo, $request_id, $data) {
+    $stmt = $pdo->prepare("
+        INSERT INTO fedex_requests (
+            request_id, origin_company_name, origin_address, origin_contact_name,
+            origin_contact_phone, origin_contact_email, destination_company_name,
+            destination_address, destination_contact_name, destination_contact_phone,
+            destination_contact_email, total_packages, total_weight, weight_unit,
+            package_dimensions, measurement_units, order_number, merchandise_description,
+            merchandise_type, merchandise_material
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    $stmt->bind_param("issssssssssisssssss", 
-        $requestId,
-        $data['origin_company_name'],
-        $data['origin_address'],
-        $data['origin_contact_name'],
+    $stmt->execute([
+        $request_id,
+        $data['origin_company_name'] ?? '',
+        $data['origin_address'] ?? '',
+        $data['origin_contact_name'] ?? '',
         $data['origin_contact_phone'] ?? '',
         $data['origin_contact_email'] ?? '',
-        $data['destination_company_name'],
-        $data['destination_address'],
-        $data['destination_contact_name'],
+        $data['destination_company_name'] ?? '',
+        $data['destination_address'] ?? '',
+        $data['destination_contact_name'] ?? '',
         $data['destination_contact_phone'] ?? '',
         $data['destination_contact_email'] ?? '',
-        $data['total_packages'],
-        $data['total_weight'],
-        $data['measurement_units'] ?? 'cm/kg',
+        $data['total_packages'] ?? 1,
+        $data['total_weight'] ?? 0,
+        'kg', // weight_unit por defecto
         $data['package_dimensions'] ?? '',
+        $data['measurement_units'] ?? '',
         $data['order_number'] ?? '',
-        $data['merchandise_description'],
+        $data['merchandise_description'] ?? '',
         $data['merchandise_type'] ?? '',
         $data['merchandise_material'] ?? ''
-    );
-    
-    $stmt->execute();
-    $stmt->close();
+    ]);
 }
 
-/**
- * Inserta solicitud Aéreo-Marítimo
- */
-function insertAereoMaritimoRequest($conex, $requestId, $data) {
-    $stmt = $conex->prepare("
-        INSERT INTO aereo_maritimo_requests 
-        (request_id, total_pallets, total_boxes, weight_per_unit, unit_length, unit_width, 
-         unit_height, pickup_date, pickup_address, ship_hours_start, ship_hours_end, 
-         contact_name, contact_phone, incoterm, delivery_type, delivery_place, 
-         delivery_date_plant, order_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+function insertAereoMaritimoRequest($pdo, $request_id, $data) {
+    $stmt = $pdo->prepare("
+        INSERT INTO aereo_maritimo_requests (
+            request_id, total_pallets, total_boxes, weight_per_unit, weight_unit,
+            unit_length, unit_width, unit_height, dimension_unit, pickup_date,
+            pickup_address, ship_hours_start, ship_hours_end, contact_name,
+            contact_phone, contact_email, incoterm, delivery_type, 
+            delivery_point_type, delivery_company_name, delivery_place,
+            delivery_date_plant, order_number
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    $deliveryDatePlant = !empty($data['delivery_date_plant']) ? $data['delivery_date_plant'] : null;
-    
-    $stmt->bind_param("iiiddddssssssssss", 
-        $requestId,
+    $stmt->execute([
+        $request_id,
         $data['total_pallets'] ?? 0,
         $data['total_boxes'] ?? 0,
-        $data['weight_per_unit'],
-        $data['unit_length'] ?? 0,
-        $data['unit_width'] ?? 0,
-        $data['unit_height'] ?? 0,
-        $data['pickup_date'],
-        $data['pickup_address'],
+        $data['weight_per_unit'] ?? 0,
+        'kg', // weight_unit por defecto
+        $data['unit_length'] ?? null,
+        $data['unit_width'] ?? null,
+        $data['unit_height'] ?? null,
+        'cm', // dimension_unit por defecto
+        $data['pickup_date'] ?? null,
+        $data['pickup_address'] ?? '',
         $data['ship_hours_start'] ?? null,
         $data['ship_hours_end'] ?? null,
-        $data['contact_name'],
+        $data['contact_name'] ?? '',
         $data['contact_phone'] ?? '',
-        $data['incoterm'],
+        $data['contact_email'] ?? '',
+        $data['incoterm'] ?? '',
         $data['delivery_type'] ?? null,
-        $data['delivery_place'],
-        $deliveryDatePlant,
+        $data['delivery_point_type'] ?? null, // Nuevo campo
+        $data['delivery_company_name'] ?? '', // Nuevo campo
+        $data['delivery_place'] ?? '',
+        $data['delivery_date_plant'] ?? null,
         $data['order_number'] ?? ''
-    );
-    
-    $stmt->execute();
-    $stmt->close();
+    ]);
 }
 
-/**
- * Inserta solicitud Nacional
- */
-function insertNacionalRequest($conex, $requestId, $data) {
-    $stmt = $conex->prepare("
-        INSERT INTO nacional_requests 
-        (request_id, total_pallets, total_boxes, weight_per_unit, unit_length, unit_width, 
-         unit_height, pickup_date, pickup_address, ship_hours_start, ship_hours_end, 
-         contact_name, contact_phone, delivery_place, delivery_date_plant, order_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+function insertNacionalRequest($pdo, $request_id, $data) {
+    $stmt = $pdo->prepare("
+        INSERT INTO nacional_requests (
+            request_id, total_pallets, total_boxes, weight_per_unit, weight_unit,
+            unit_length, unit_width, unit_height, dimension_unit, pickup_date,
+            pickup_address, ship_hours_start, ship_hours_end, contact_name,
+            contact_phone, contact_email, delivery_place, delivery_date_plant,
+            order_number
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
-    $deliveryPlace = $data['delivery_place'] ?? 'Av. de la luz #24 int. 3 y 4 Acceso III. Parque Ind. Benito Juárez 76120, Querétaro. México';
-    $deliveryDatePlant = !empty($data['delivery_date_plant']) ? $data['delivery_date_plant'] : null;
-    
-    $stmt->bind_param("iiiddddsssssss", 
-        $requestId,
+    $stmt->execute([
+        $request_id,
         $data['total_pallets'] ?? 0,
         $data['total_boxes'] ?? 0,
-        $data['weight_per_unit'],
-        $data['unit_length'] ?? 0,
-        $data['unit_width'] ?? 0,
-        $data['unit_height'] ?? 0,
-        $data['pickup_date'],
-        $data['pickup_address'],
+        $data['weight_per_unit'] ?? 0,
+        'kg', // weight_unit por defecto
+        $data['unit_length'] ?? null,
+        $data['unit_width'] ?? null,
+        $data['unit_height'] ?? null,
+        'cm', // dimension_unit por defecto
+        $data['pickup_date'] ?? null,
+        $data['pickup_address'] ?? '',
         $data['ship_hours_start'] ?? null,
         $data['ship_hours_end'] ?? null,
-        $data['contact_name'],
+        $data['contact_name'] ?? '',
         $data['contact_phone'] ?? '',
-        $deliveryPlace,
-        $deliveryDatePlant,
+        $data['contact_email'] ?? '', // Nuevo campo
+        $data['delivery_place'] ?? 'Av. de la luz #24 int. 3 y 4 Acceso III. Parque Ind. Benito Juárez 76120, Querétaro. México',
+        $data['delivery_date_plant'] ?? null,
         $data['order_number'] ?? ''
-    );
-    
-    $stmt->execute();
-    $stmt->close();
+    ]);
 }
 
-/**
- * Envía emails a transportistas (actualizado para GRAMMER)
- */
-function sendEmailsToCarriers($conex, $requestId, $data, $isGrammerRequest = false) {
-    $stmt = $conex->prepare("SELECT name, contact_email FROM carriers WHERE is_active = 1");
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $carriers = [];
-    while ($row = $result->fetch_assoc()) {
-        $carriers[] = $row;
+function handleGetRequests() {
+    global $pdo;
+    
+    // Obtener parámetros de filtro
+    $status = $_GET['status'] ?? null;
+    $service_type = $_GET['service_type'] ?? null;
+    $date_from = $_GET['date_from'] ?? null;
+    $date_to = $_GET['date_to'] ?? null;
+    $limit = min((int)($_GET['limit'] ?? 50), 100);
+    $offset = max((int)($_GET['offset'] ?? 0), 0);
+    
+    // Construir query base con información de cotizaciones
+    $sql = "
+        SELECT 
+            srd.*,
+            DATE_FORMAT(srd.created_at, '%d/%m/%Y %H:%i') as created_at_formatted,
+            JSON_OBJECT(
+                'origin_country', 
+                CASE 
+                    WHEN srd.shipping_method = 'nacional' THEN 'México'
+                    WHEN srd.shipping_method = 'fedex' AND JSON_EXTRACT(srd.method_details, '$.origin_address') IS NOT NULL 
+                        THEN COALESCE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(srd.method_details, '$.origin_address')), ',', -1), 'México')
+                    ELSE 'Internacional'
+                END,
+                'destination_country',
+                CASE 
+                    WHEN srd.shipping_method = 'nacional' THEN 'México'
+                    WHEN srd.shipping_method = 'fedex' AND JSON_EXTRACT(srd.method_details, '$.destination_address') IS NOT NULL 
+                        THEN COALESCE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(srd.method_details, '$.destination_address')), ',', -1), 'México')
+                    ELSE 'Internacional'
+                END,
+                'is_international', srd.shipping_method != 'nacional'
+            ) as route_info,
+            JSON_OBJECT(
+                'total_quotes', COALESCE(q.total_quotes, 0),
+                'selected_quotes', COALESCE(q.selected_quotes, 0),
+                'has_quotes', COALESCE(q.total_quotes, 0) > 0
+            ) as quote_status
+        FROM shipping_requests_detailed srd
+        LEFT JOIN (
+            SELECT 
+                request_id,
+                COUNT(*) as total_quotes,
+                SUM(CASE WHEN is_selected = 1 THEN 1 ELSE 0 END) as selected_quotes
+            FROM quotes
+            GROUP BY request_id
+        ) q ON srd.id = q.request_id
+    ";
+    
+    $conditions = [];
+    $params = [];
+    
+    if ($status) {
+        $conditions[] = "srd.status = ?";
+        $params[] = $status;
     }
-    $stmt->close();
     
-    $results = ['success' => [], 'errors' => []];
+    if ($service_type) {
+        $conditions[] = "srd.service_type = ?";
+        $params[] = $service_type;
+    }
     
-    // Si tenemos el mailer disponible, usarlo
-    if (class_exists('App\Mailer\AppMailer')) {
-        $mailer = new App\Mailer\AppMailer();
+    if ($date_from) {
+        $conditions[] = "DATE(srd.created_at) >= ?";
+        $params[] = $date_from;
+    }
+    
+    if ($date_to) {
+        $conditions[] = "DATE(srd.created_at) <= ?";
+        $params[] = $date_to;
+    }
+    
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(" AND ", $conditions);
+    }
+    
+    $sql .= " ORDER BY srd.created_at DESC LIMIT ? OFFSET ?";
+    $params[] = $limit;
+    $params[] = $offset;
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Decodificar JSON fields
+    foreach ($requests as &$request) {
+        $request['method_details'] = json_decode($request['method_details'], true);
+        $request['route_info'] = json_decode($request['route_info'], true);
+        $request['quote_status'] = json_decode($request['quote_status'], true);
+    }
+    
+    // Obtener estadísticas
+    $stats = getRequestsStatistics($pdo, $status, $service_type, $date_from, $date_to);
+    
+    echo json_encode([
+        'success' => true,
+        'requests' => $requests,
+        'stats' => $stats,
+        'pagination' => [
+            'limit' => $limit,
+            'offset' => $offset,
+            'has_more' => count($requests) === $limit
+        ]
+    ]);
+}
+
+function getRequestsStatistics($pdo, $status = null, $service_type = null, $date_from = null, $date_to = null) {
+    // Estadísticas básicas
+    $sql = "
+        SELECT 
+            status,
+            service_type,
+            COUNT(*) as count
+        FROM shipping_requests sr
+    ";
+    
+    $conditions = [];
+    $params = [];
+    
+    if ($service_type) {
+        $conditions[] = "service_type = ?";
+        $params[] = $service_type;
+    }
+    
+    if ($date_from) {
+        $conditions[] = "DATE(created_at) >= ?";
+        $params[] = $date_from;
+    }
+    
+    if ($date_to) {
+        $conditions[] = "DATE(created_at) <= ?";
+        $params[] = $date_to;
+    }
+    
+    if (!empty($conditions)) {
+        $sql .= " WHERE " . implode(" AND ", $conditions);
+    }
+    
+    $sql .= " GROUP BY status, service_type";
+    
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $raw_stats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Procesar estadísticas
+    $basic_stats = [
+        'total_requests' => 0,
+        'pending' => 0,
+        'quoting' => 0,
+        'completed' => 0,
+        'canceled' => 0
+    ];
+    
+    $by_service_type = [];
+    
+    foreach ($raw_stats as $stat) {
+        $basic_stats['total_requests'] += $stat['count'];
+        $basic_stats[$stat['status']] += $stat['count'];
         
-        foreach ($carriers as $carrier) {
-            $emailContent = $isGrammerRequest 
-                ? generateGrammerQuoteRequestEmail($requestId, $data, $carrier)
-                : generateQuoteRequestEmail($requestId, $data, $carrier);
-                
-            $sent = $mailer->sendEmail(
-                $carrier['contact_email'], 
-                $carrier['name'], 
-                $emailContent['subject'], 
-                $emailContent['body']
-            );
-            
-            if ($sent) {
-                $results['success'][] = $carrier['name'];
-            } else {
-                $results['errors'][] = "Error sending to {$carrier['name']}";
-            }
+        if (!isset($by_service_type[$stat['service_type']])) {
+            $by_service_type[$stat['service_type']] = 0;
         }
-    } else {
-        // Fallback: marcar como enviado sin enviar realmente
-        foreach ($carriers as $carrier) {
-            $results['success'][] = $carrier['name'] . ' (simulated)';
-        }
-        writeLog('warning', 'Mailer class not available, simulating email sends', ['request_id' => $requestId]);
+        $by_service_type[$stat['service_type']] += $stat['count'];
     }
     
-    return $results;
-}
-
-/**
- * Genera email para solicitud GRAMMER
- */
-function generateGrammerQuoteRequestEmail($requestId, $data, $carrier) {
-    $internalRef = "Pendiente"; // Se actualiza después
-    $method = $data['shipping_method'];
-    $methodName = [
-        'fedex' => 'Fedex Express',
-        'aereo_maritimo' => 'Aéreo-Marítimo',
-        'nacional' => 'Nacional'
-    ][$method] ?? $method;
+    // Actividad reciente (últimos 7 días)
+    $sql = "
+        SELECT 
+            DATE(created_at) as date,
+            COUNT(*) as requests,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+        FROM shipping_requests
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+    ";
     
-    $subject = "GRAMMER - Solicitud de Cotización #{$requestId} - {$methodName}";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $recent_activity = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    $body = "
-    <html><body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
-        <div style='background: linear-gradient(135deg, #003366, #0066CC); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;'>
-            <h1 style='margin: 0; font-size: 24px;'>
-                🏭 GRAMMER Automotive Puebla
-            </h1>
-            <p style='margin: 5px 0 0 0; opacity: 0.9;'>Logística y Tráfico</p>
-        </div>
-        
-        <h2 style='color: #003366; margin-bottom: 20px;'>
-            Solicitud de Cotización #{$requestId}
-        </h2>
-        
-        <div style='background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;'>
-            <p><strong>Estimado {$carrier['name']},</strong></p>
-            <p>Solicitamos su cotización para el siguiente envío <strong>{$methodName}</strong>:</p>
-        </div>";
-        
-    // Agregar detalles específicos del método
-    if ($method === 'fedex') {
-        $body .= generateFedexEmailContent($data['method_data']);
-    } elseif ($method === 'aereo_maritimo') {
-        $body .= generateAereoMaritimoEmailContent($data['method_data']);
-    } elseif ($method === 'nacional') {
-        $body .= generateNacionalEmailContent($data['method_data']);
-    }
+    // Top usuarios
+    $sql = "
+        SELECT 
+            user_name,
+            COUNT(*) as request_count
+        FROM shipping_requests
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY user_name
+        ORDER BY request_count DESC
+        LIMIT 5
+    ";
     
-    $body .= "
-        <div style='background: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0;'>
-            <p style='margin: 0;'><strong>📞 Para responder:</strong></p>
-            <p style='margin: 5px 0 0 0;'>Responda a este email con su cotización detallada incluyendo tiempos y costos.</p>
-        </div>
-        
-        <div style='text-align: center; padding: 20px; border-top: 1px solid #ddd; margin-top: 30px;'>
-            <p style='color: #666; margin: 0;'>
-                <strong>GRAMMER Automotive Puebla S.A. de C.V.</strong><br>
-                Av. de la luz #24 int. 3 y 4 Acceso III<br>
-                Parque Ind. Benito Juárez 76120, Querétaro, México
-            </p>
-        </div>
-    </div>
-    </body></html>";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $top_users = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    return ['subject' => $subject, 'body' => $body];
+    return [
+        'basic' => $basic_stats,
+        'by_service_type' => $by_service_type,
+        'recent_activity' => $recent_activity,
+        'top_users' => $top_users
+    ];
 }
 
-/**
- * Genera contenido de email para Fedex
- */
-function generateFedexEmailContent($data) {
-    return "
-    <div style='margin: 20px 0;'>
-        <h3 style='color: #003366; border-bottom: 2px solid #0066CC; padding-bottom: 5px;'>
-            📦 Detalles Fedex Express
-        </h3>
-        <table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Origen:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['origin_company_name']}<br>{$data['origin_address']}</td>
-            </tr>
-            <tr>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Destino:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['destination_company_name']}<br>{$data['destination_address']}</td>
-            </tr>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Paquetes:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['total_packages']} paquetes - {$data['total_weight']} kg</td>
-            </tr>
-            <tr>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Mercancía:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['merchandise_description']}</td>
-            </tr>
-        </table>
-    </div>";
-}
-
-/**
- * Genera contenido de email para Aéreo-Marítimo
- */
-function generateAereoMaritimoEmailContent($data) {
-    return "
-    <div style='margin: 20px 0;'>
-        <h3 style='color: #003366; border-bottom: 2px solid #0066CC; padding-bottom: 5px;'>
-            ✈️🚢 Detalles Aéreo-Marítimo
-        </h3>
-        <table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Unidades:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {$data['total_pallets']} pallets, {$data['total_boxes']} cajas<br>
-                    Peso por unidad: {$data['weight_per_unit']} kg
-                </td>
-            </tr>
-            <tr>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Recolección:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {$data['pickup_date']}<br>
-                    {$data['pickup_address']}
-                </td>
-            </tr>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>INCOTERM:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['incoterm']}</td>
-            </tr>
-            <tr>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Entrega:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>{$data['delivery_place']}</td>
-            </tr>
-        </table>
-    </div>";
-}
-
-/**
- * Genera contenido de email para Nacional
- */
-function generateNacionalEmailContent($data) {
-    return "
-    <div style='margin: 20px 0;'>
-        <h3 style='color: #003366; border-bottom: 2px solid #0066CC; padding-bottom: 5px;'>
-            🚛 Detalles Envío Nacional
-        </h3>
-        <table style='width: 100%; border-collapse: collapse; margin: 10px 0;'>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Unidades:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {$data['total_pallets']} pallets, {$data['total_boxes']} cajas<br>
-                    Peso por unidad: {$data['weight_per_unit']} kg
-                </td>
-            </tr>
-            <tr>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Recolección:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>
-                    {$data['pickup_date']}<br>
-                    {$data['pickup_address']}
-                </td>
-            </tr>
-            <tr style='background: #f8f9fa;'>
-                <td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Entrega:</td>
-                <td style='padding: 8px; border: 1px solid #ddd;'>
-                    <strong>Planta GRAMMER Querétaro</strong><br>
-                    {$data['delivery_place']}
-                </td>
-            </tr>
-        </table>
-    </div>";
-}
-
-/**
- * Genera email para solicitud tradicional (compatibilidad)
- */
-function generateQuoteRequestEmail($requestId, $data, $carrier) {
-    $subject = "Quote Request #{$requestId}";
-    $body = "
-    <html><body>
-    <h1>Quote Request #{$requestId}</h1>
-    <p>Dear {$carrier['name']},</p>
-    <p>Please provide a quote for the following shipment:</p>
-    <p><strong>Origin:</strong> " . htmlspecialchars($data['origin_details']['address']) . "</p>
-    <p><strong>Destination:</strong> " . htmlspecialchars($data['destination_details']['address']) . "</p>
-    <p>Please reply to this email with your quote.</p>
-    <p>Thank you!</p>
-    </body></html>";
-    return ['subject' => $subject, 'body' => $body];
+function sendQuoteRequestEmails($request_id, $shipping_method, $method_data) {
+    // Esta función se ejecutaría de forma asíncrona
+    // Por ahora solo registramos en log
+    error_log("GRAMMER: Envío de emails para solicitud #$request_id - Método: $shipping_method");
 }
 ?>

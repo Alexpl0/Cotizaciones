@@ -118,16 +118,21 @@ export default class NacionalForm extends BaseForm {
             </div>
             
             <div class="row mb-4">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="contactName" class="form-label">Nombre del Contacto</label>
                     <input type="text" class="form-control form-control-custom" 
                            id="contactName" name="contact_name" required>
                     <div class="invalid-feedback">Ingrese el nombre del contacto.</div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label for="contactPhone" class="form-label">Teléfono</label>
                     <input type="tel" class="form-control form-control-custom" 
                            id="contactPhone" name="contact_phone">
+                </div>
+                <div class="col-md-4">
+                    <label for="contactEmail" class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-control form-control-custom" 
+                           id="contactEmail" name="contact_email">
                 </div>
             </div>
             
@@ -234,6 +239,7 @@ export default class NacionalForm extends BaseForm {
             
             contact_name: formElements.contact_name.value,
             contact_phone: formElements.contact_phone?.value || '',
+            contact_email: formElements.contact_email?.value || '',
             
             delivery_place: formElements.delivery_place.value,
             delivery_date_plant: formElements.delivery_date_plant?.value || null,
